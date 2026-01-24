@@ -1,0 +1,750 @@
+<% layout('layout') -%>
+
+  <style>
+    .glass-panel {
+      background: rgba(31, 41, 55, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(75, 85, 99, 0.4);
+    }
+
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.375rem;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Strong selection style */
+    .video-item-selected {
+      border-color: #10b981 !important;
+      /* emerald-500 */
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5);
+    }
+  </style>
+
+  <% block('header_left', ` <h1 class="text-lg font-semibold text-blue-400 truncate max-w-[200px]">
+    ${channel.channel_name}
+    </h1>
+    <span
+      class="px-2 py-0.5 bg-green-500/10 text-green-400 text-[10px] font-bold rounded-full border border-green-500/20 tracking-wider">
+      CONNECTED
+    </span>
+    `) -%>
+
+    <% block('header_right', ` <a href="/dashboard"
+      class="px-4 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-full text-xs font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 transform hover:scale-105 active:scale-95 mr-4">
+      <i class="ti ti-arrow-left"></i>
+      <span>Back</span>
+      </a>
+      `) -%>
+
+
+
+      <!-- Asset Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Video Card -->
+        <div
+          class="glass-panel rounded-xl p-5 flex items-center justify-between group hover:border-green-500/50 transition-colors">
+          <div class="flex items-center gap-4">
+            <div
+              class="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500 group-hover:bg-green-500/20 transition-colors">
+              <i class="ti ti-movie text-2xl"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-200">Video</h3>
+              <p class="text-xs text-gray-400">
+                <%= videos.length %> File
+              </p>
+            </div>
+          </div>
+          <a href="/dashboard/<%= channel.slug || channel.id %>/videos"
+            class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded transition-colors inline-block text-center">
+            Buka
+          </a>
+        </div>
+
+        <!-- Thumbnail Card -->
+        <div
+          class="glass-panel rounded-xl p-5 flex items-center justify-between group hover:border-red-500/50 transition-colors">
+          <div class="flex items-center gap-4">
+            <div
+              class="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500 group-hover:bg-red-500/20 transition-colors">
+              <i class="ti ti-photo text-2xl"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-200">Thumbnail</h3>
+              <p class="text-xs text-gray-400">
+                <%= thumbnails.length %> File
+              </p>
+            </div>
+          </div>
+          <a href="/dashboard/<%= channel.slug || channel.id %>/thumbnails"
+            class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded transition-colors inline-block text-center">
+            Buka
+          </a>
+        </div>
+
+        <!-- Musik Card -->
+        <div
+          class="glass-panel rounded-xl p-5 flex items-center justify-between group hover:border-yellow-500/50 transition-colors">
+          <div class="flex items-center gap-4">
+            <div
+              class="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-500 group-hover:bg-yellow-500/20 transition-colors">
+              <i class="ti ti-music text-2xl"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-200">Musik</h3>
+              <p class="text-xs text-gray-400">
+                <%= music.length %> File
+              </p>
+            </div>
+          </div>
+          <a href="/dashboard/<%= channel.slug || channel.id %>/music"
+            class="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold rounded transition-colors inline-block text-center">
+            Buka
+          </a>
+        </div>
+
+        <!-- Playlist Card -->
+        <div
+          class="glass-panel rounded-xl p-5 flex items-center justify-between group hover:border-indigo-500/50 transition-colors">
+          <div class="flex items-center gap-4">
+            <div
+              class="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-500/20 transition-colors">
+              <i class="ti ti-playlist text-2xl"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-200">Playlist</h3>
+              <p class="text-xs text-gray-400">
+                <%= playlists.length %> File
+              </p>
+            </div>
+          </div>
+          <a href="/dashboard/<%= channel.slug || channel.id %>/playlists"
+            class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded transition-colors inline-block text-center">
+            Kelola
+          </a>
+        </div>
+
+
+      </div>
+
+      <!-- Active Rotations Section (Inserted) -->
+      <% const channelRotationsList=(typeof rotations !=='undefined' && rotations) ? rotations.filter(r=>
+        r.youtube_channel_id === channel.id) : [];
+        if (channelRotationsList.length > 0) {
+        %>
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <div class="p-1.5 bg-purple-500/10 rounded-lg">
+                <i class="ti ti-rotate text-purple-400"></i>
+              </div>
+              <h2 class="text-base font-bold text-gray-200">Rotation Schedules</h2>
+              <span class="px-2 py-0.5 bg-gray-800 text-gray-400 text-xs rounded-full border border-gray-700">
+                <%= channelRotationsList.length %>
+              </span>
+            </div>
+            <a href="/dashboard/<%= channel.slug || channel.id %>/rotations"
+              class="text-xs font-bold text-purple-400 hover:text-purple-300 uppercase tracking-wider border border-purple-500/30 px-3 py-1.5 rounded-lg hover:bg-purple-500/10 transition-colors flex items-center gap-1">
+              <span>Manage All</span>
+              <i class="ti ti-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <% channelRotationsList.slice(0, 4).forEach(rotation=> { %>
+              <div
+                class="bg-gray-800 rounded-lg border border-gray-700 p-3 flex items-center gap-3 relative overflow-hidden group hover:border-purple-500/50 transition-colors">
+                <!-- Status Indicator Line -->
+                <div
+                  class="absolute left-0 top-0 bottom-0 w-0.5 <%= rotation.status === 'active' ? 'bg-green-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-gray-600' %>">
+                </div>
+
+                <div
+                  class="w-10 h-10 rounded bg-gray-900 flex-shrink-0 overflow-hidden relative group-hover:ring-1 ring-purple-500/30 transition-all">
+                  <% if (rotation.first_thumbnail) { %>
+                    <img src="/uploads/thumbnails/<%= rotation.first_thumbnail.split('/').pop() %>"
+                      class="w-full h-full object-cover"
+                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="w-full h-full flex items-center justify-center text-purple-500 hidden bg-purple-500/10">
+                      <i class="ti ti-rotate"></i>
+                    </div>
+                    <% } else { %>
+                      <div class="w-full h-full flex items-center justify-center text-purple-500 bg-purple-500/10"><i
+                          class="ti ti-rotate"></i></div>
+                      <% } %>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <h4
+                    class="font-bold text-gray-200 truncate text-xs mb-0.5 group-hover:text-purple-400 transition-colors">
+                    <%= rotation.name %>
+                  </h4>
+                  <div class="flex items-center gap-1.5">
+                    <% if (rotation.status==='active' ) { %>
+                      <div
+                        class="flex items-center gap-1 text-[10px] text-green-400 font-bold bg-green-500/10 px-1.5 py-0.5 rounded">
+                        <span class="w-1 h-1 rounded-full bg-green-400 animate-pulse"></span>
+                        RUNNING
+                      </div>
+                      <% } else if (rotation.status==='paused' ) { %>
+                        <span
+                          class="text-[10px] bg-yellow-500/10 text-yellow-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">PAUSED</span>
+                        <% } else { %>
+                          <span
+                            class="text-[10px] bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">INACTIVE</span>
+                          <% } %>
+                            <span class="text-[10px] text-gray-600">•</span>
+                            <span class="text-[10px] text-gray-500">
+                              <%= rotation.item_count %> Items
+                            </span>
+                  </div>
+                </div>
+
+                <a href="/dashboard/<%= channel.slug || channel.id %>/rotations"
+                  class="w-7 h-7 rounded-lg bg-gray-700/50 hover:bg-purple-600 flex items-center justify-center text-gray-400 hover:text-white transition-all opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0">
+                  <i class="ti ti-settings text-xs"></i>
+                </a>
+              </div>
+              <% }); %>
+                <% if (channelRotationsList.length> 4) { %>
+                  <a href="/dashboard/<%= channel.slug || channel.id %>/rotations"
+                    class="bg-gray-800/50 rounded-lg border border-gray-700 border-dashed p-3 flex items-center justify-center gap-2 hover:bg-gray-800 hover:border-purple-500/50 transition-colors group">
+                    <span class="text-xs font-medium text-gray-400 group-hover:text-purple-400">+ <%=
+                        channelRotationsList.length - 4 %> More Rotations</span>
+                  </a>
+                  <% } %>
+          </div>
+        </div>
+        <% } %>
+
+          <!-- Toolbar -->
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div class="flex items-center gap-2 text-xl font-bold text-gray-200">
+              <i class="ti ti-broadcast"></i>
+              <h2>Siaran</h2>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm flex items-center gap-2 transition-colors font-medium">
+                <i class="ti ti-bolt"></i> Auto Jadwal
+              </button>
+              <button onclick="openStreamModalV2()"
+                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm flex items-center gap-2 transition-colors font-medium">
+                <i class="ti ti-plus"></i> + Baru
+              </button>
+              <a href="/dashboard/<%= channel.slug || channel.id %>/rotations?action=create"
+                class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm flex items-center gap-2 transition-colors font-medium">
+                <i class="ti ti-rotate"></i> Buat Rotasi
+              </a>
+              <button onclick="deleteSelectedStreams()" id="btnHapusMasal"
+                class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-sm flex items-center gap-2 transition-colors font-medium">
+                <i class="ti ti-trash"></i> Hapus Masal
+              </button>
+            </div>
+          </div>
+
+          <!-- Date Group Header Mockup -->
+          <div
+            class="w-full bg-indigo-900/30 border-l-4 border-indigo-500 p-3 mb-2 flex justify-between items-center rounded-r-lg">
+            <span class="font-bold text-indigo-200 uppercase tracking-wider text-sm">
+              Daftar Siaran
+            </span>
+          </div>
+
+          <!-- Streams Table -->
+          <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden mb-8">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-700">
+                <thead class="bg-gray-900/50 text-gray-400 text-xs uppercase font-medium">
+                  <tr>
+                    <th class="px-6 py-3 text-center tracking-wider"><input type="checkbox" id="selectAllStreams"
+                        class="rounded bg-gray-700 cursor-pointer"></th>
+                    <th class="px-6 py-3 text-center tracking-wider w-[30%]">Judul</th>
+                    <th class="px-5 py-3 text-center tracking-wider whitespace-nowrap w-[20%]">Nama Video</th>
+                    <th class="px-5 py-3 text-center tracking-wider whitespace-nowrap">Mulai</th>
+                    <th class="px-5 py-3 text-center tracking-wider whitespace-nowrap">Selesai</th>
+                    <th class="px-5 py-3 text-center tracking-wider whitespace-nowrap">Durasi</th>
+                    <th class="px-5 py-3 text-center tracking-wider whitespace-nowrap">Status</th>
+                    <th class="px-6 py-3 text-center tracking-wider whitespace-nowrap">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="streams-table-body" class="bg-gray-800 divide-y divide-gray-700 text-sm">
+                  <!-- populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Secure JSON Data -->
+          <script id="data-streams" type="application/json"><%- (streams || '[]').replace(/</g, '\\u003c') %></script>
+          <script id="data-videos"
+            type="application/json"><%- (typeof videos !== 'undefined' ? JSON.stringify(videos) : '[]').replace(/</g, '\\u003c') %></script>
+          <script id="data-playlists"
+            type="application/json"><%- (typeof playlists !== 'undefined' ? JSON.stringify(playlists) : '[]').replace(/</g, '\\u003c') %></script>
+          <script id="data-thumbnails"
+            type="application/json"><%- (typeof thumbnails !== 'undefined' ? JSON.stringify(thumbnails) : '[]').replace(/</g, '\\u003c') %></script>
+
+          <script data-script="redesign-dashboard">
+            // Isolated Helpers
+            const fetchJson = (id) => JSON.parse(document.getElementById(id).textContent || '[]');
+
+            function resolvePathV2(path) {
+              if (!path) return '';
+              if (path.startsWith('http')) return path;
+              let c = path.replace(/\\/g, '/');
+              if (c.includes('/public/')) c = '/' + c.split('/public/')[1];
+              else if (c.includes('/uploads/')) c = '/uploads/' + c.split('/uploads/')[1];
+              else if (!c.startsWith('/') && !c.includes(':')) c = '/' + c;
+              return c.replace(/\/+/g, '/');
+            }
+            window.resolvePathV2 = resolvePathV2;
+
+            // Global state for this block
+            const videos = fetchJson('data-videos');
+            const playlists = fetchJson('data-playlists');
+            const thumbnails = fetchJson('data-thumbnails');
+            const initialStreams = fetchJson('data-streams');
+
+            // --- Modal V2 ---
+            window.openStreamModalV2 = function (mode = 'create', streamId = null) {
+              console.log('openStreamModalV2 called with mode:', mode, 'id:', streamId);
+              const modal = document.getElementById('newStreamModal');
+              if (!modal) return;
+
+              const form = document.getElementById('newStreamForm');
+              if (form) {
+                form.reset();
+                form.setAttribute('data-mode', mode);
+                if (streamId) {
+                  form.setAttribute('data-id', streamId);
+                } else {
+                  form.removeAttribute('data-id');
+                }
+              }
+
+              document.getElementById('selectedVideoId').value = '';
+              document.getElementById('selectedPlaylistId').value = '';
+              document.getElementById('selectedThumbnailId').value = '';
+
+              // Reset Stream Key visibility
+              const keyInput = document.getElementById('streamKeyInput');
+              const keyToggle = document.getElementById('streamKeyToggle');
+              if (keyInput) keyInput.type = 'password';
+              if (keyToggle) keyToggle.className = 'ti ti-eye';
+
+              const preview = document.getElementById('videoPreview');
+              const empty = document.getElementById('emptyPreview');
+              if (preview) { preview.innerHTML = ''; preview.classList.add('hidden'); }
+              if (empty) empty.classList.remove('hidden');
+
+              document.querySelectorAll('.v2-selectable-card').forEach(c => c.classList.remove('video-item-selected'));
+
+              populateVideoGridV2(videos);
+              populateThumbnailGridV2(thumbnails);
+              populatePlaylistDropdownV2(playlists);
+
+              const modalTitle = document.getElementById('streamModalTitle');
+              const modalDesc = document.getElementById('streamModalDescription');
+              if (modalTitle) modalTitle.textContent = 'Create New Stream';
+              if (modalDesc) modalDesc.textContent = 'Setup single stream configuration manually';
+
+              const createBtn = document.getElementById('createStreamBtn');
+              if (createBtn) createBtn.innerHTML = '<i class="ti ti-rocket"></i> Create Stream';
+
+              modal.classList.remove('hidden');
+              document.body.style.overflow = 'hidden';
+            };
+
+            window.closeStreamModalV2 = function () {
+              console.log('closeStreamModalV2 called');
+              const modal = document.getElementById('newStreamModal');
+              if (modal) modal.classList.add('hidden');
+              document.body.style.overflow = '';
+            };
+
+            // --- Selection Logic V2 ---
+            function selectVideoV2(video, element) {
+              console.log('selectVideoV2 called for:', video.id);
+              document.getElementById('selectedVideoId').value = video.id;
+
+              document.querySelectorAll('.v2-selectable-video').forEach(el => {
+                el.classList.remove('video-item-selected');
+                el.querySelectorAll('.v2-check-marker').forEach(m => m.classList.add('hidden'));
+              });
+
+              element.classList.add('video-item-selected');
+              element.querySelectorAll('.v2-check-marker').forEach(m => m.classList.remove('hidden'));
+
+              const preview = document.getElementById('videoPreview');
+              const empty = document.getElementById('emptyPreview');
+              if (preview && empty) {
+                const url = resolvePathV2(video.filepath);
+                empty.classList.add('hidden');
+                preview.classList.remove('hidden');
+                preview.innerHTML = `<video src="${url}" controls class="w-full h-full object-contain bg-black" autoplay muted></video>`;
+              }
+            }
+
+            function populateVideoGridV2(vids, search = '') {
+              const container = document.getElementById('videoGridContainer');
+              if (!container) return;
+              container.innerHTML = '';
+              const filtered = vids.filter(v => (v.title || '').toLowerCase().includes(search.toLowerCase()));
+
+              filtered.forEach(v => {
+                const div = document.createElement('div');
+                div.className = 'v2-selectable-card v2-selectable-video bg-gray-800 rounded-lg overflow-hidden cursor-pointer border-2 border-transparent relative aspect-video transition-all';
+                div.setAttribute('data-id', v.id);
+                const thumb = resolvePathV2(v.thumbnail_path);
+                div.innerHTML = `
+                <img src="${thumb}" class="w-full h-full object-cover" onerror="this.src='/images/default-thumbnail.jpg'">
+                <div class="v2-check-marker absolute inset-0 bg-emerald-500/10 hidden"></div>
+                <div class="v2-check-marker absolute top-1 left-1 hidden z-10">
+                    <div class="bg-emerald-500 text-white rounded-full p-0.5 shadow-md border border-emerald-400">
+                        <i class="ti ti-check text-[10px] block"></i>
+                    </div>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 bg-black/60 p-1 text-[8px] truncate">${v.title}</div>
+            `;
+                div.addEventListener('click', () => selectVideoV2(v, div));
+                container.appendChild(div);
+              });
+            }
+
+            function populateThumbnailGridV2(thumbs) {
+              const container = document.getElementById('thumbnailGridContainer');
+              if (!container) return;
+              container.innerHTML = '';
+              thumbs.forEach(t => {
+                const div = document.createElement('div');
+                div.className = 'v2-selectable-card v2-selectable-thumb bg-gray-800 rounded-lg overflow-hidden cursor-pointer border-2 border-transparent relative aspect-video';
+                div.setAttribute('data-id', t.id);
+                const url = resolvePathV2(t.filepath);
+                div.innerHTML = `
+                <img src="${url}" class="w-full h-full object-cover" onerror="this.src='/images/default-thumbnail.jpg'">
+                <div class="v2-thumb-check absolute inset-0 bg-amber-500/10 hidden"></div>
+                <div class="v2-thumb-check absolute top-1 left-1 hidden z-10">
+                    <div class="bg-amber-500 text-white rounded-full p-0.5 shadow-md border border-amber-400">
+                        <i class="ti ti-check text-[10px] block"></i>
+                    </div>
+                </div>
+            `;
+                div.addEventListener('click', () => {
+                  document.getElementById('selectedThumbnailId').value = t.id;
+                  document.querySelectorAll('.v2-selectable-thumb').forEach(c => {
+                    c.classList.remove('video-item-selected');
+                    c.querySelectorAll('.v2-thumb-check').forEach(m => m.classList.add('hidden'));
+                  });
+                  div.classList.add('video-item-selected');
+                  div.querySelectorAll('.v2-thumb-check').forEach(m => m.classList.remove('hidden'));
+                  document.getElementById('selectedThumbnailName').textContent = 'Selected: Custom';
+                });
+                container.appendChild(div);
+              });
+            }
+
+            function populatePlaylistDropdownV2(pls) {
+              const sel = document.getElementById('playlistSelect');
+              if (!sel) return;
+              sel.innerHTML = '<option value="">Select a Playlist...</option>';
+              pls.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                sel.appendChild(opt);
+              });
+              sel.onchange = (e) => {
+                const id = e.target.value;
+                document.getElementById('selectedPlaylistId').value = id;
+                if (id) {
+                  document.getElementById('emptyPreview').classList.add('hidden');
+                  const p = document.getElementById('videoPreview');
+                  p.classList.remove('hidden');
+                  p.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-900 text-emerald-500"><i class="ti ti-playlist text-4xl mb-2"></i><span>Playlist Selected</span></div>`;
+                }
+              };
+            }
+
+            // Expose V2 functions
+            window.switchVideoModeV2 = function (m) {
+              const s = document.getElementById('videoSelectionArea');
+              const p = document.getElementById('playlistSelectionArea');
+              const ts = document.getElementById('tabSingle');
+              const tp = document.getElementById('tabPlaylist');
+              if (m === 'single') {
+                s.classList.remove('hidden'); p.classList.add('hidden');
+                ts.classList.add('bg-emerald-600', 'text-white'); ts.classList.remove('text-gray-500');
+                tp.classList.remove('bg-emerald-600', 'text-white'); tp.classList.add('text-gray-500');
+                document.getElementById('selectedPlaylistId').value = '';
+              } else {
+                p.classList.remove('hidden'); s.classList.add('hidden');
+                tp.classList.add('bg-emerald-600', 'text-white'); tp.classList.remove('text-gray-500');
+                ts.classList.remove('bg-emerald-600', 'text-white'); ts.classList.add('text-gray-500');
+                document.getElementById('selectedVideoId').value = '';
+              }
+            };
+
+            window.handleKeySelectV2 = function (el) {
+              const wrapper = document.getElementById('manualKeyInputWrapper');
+              const input = document.getElementById('streamKeyInput');
+              if (el.value === 'manual') {
+                wrapper.classList.remove('hidden');
+                if (input) input.disabled = false;
+              } else {
+                wrapper.classList.add('hidden');
+                if (input) input.disabled = true;
+              }
+            };
+
+            // Initial Table Render
+            document.addEventListener('DOMContentLoaded', () => {
+              const tbody = document.getElementById('streams-table-body');
+              if (!tbody) return;
+              tbody.innerHTML = initialStreams.map(s => {
+                const isLive = s.status === 'live';
+                const isScheduled = s.status === 'scheduled';
+                const videoName = s.video_type === 'playlist' ? (s.playlist_name || 'Playlist') : (s.video_title || '-');
+
+                // Helper untuk format waktu lokal
+                const formatLocalTime = (isoString) => {
+                  if (!isoString) return '-';
+                  const d = new Date(isoString);
+                  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                };
+
+                const startTime = formatLocalTime(s.schedule_time);
+                const endTime = formatLocalTime(s.end_time);
+
+                // Logic: Durasi dihitung dari Jadwal (End - Start) jika ada, karena video di-loop.
+                let duration = '-';
+
+                if (s.schedule_time && s.end_time) {
+                  const start = new Date(s.schedule_time);
+                  const end = new Date(s.end_time);
+                  const diff = Math.floor((end - start) / 1000); // seconds
+
+                  if (diff > 0) {
+                    const h = Math.floor(diff / 3600);
+                    const m = Math.floor((diff % 3600) / 60);
+                    const s_rem = diff % 60;
+                    duration = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s_rem.toString().padStart(2, '0')}`;
+                  }
+                } else if (s.duration) {
+                  const h = Math.floor(s.duration / 3600);
+                  const m = Math.floor((s.duration % 3600) / 60);
+                  const s_rem = s.duration % 60;
+                  duration = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s_rem.toString().padStart(2, '0')}`;
+                }
+
+                let actionButton = '';
+                if (isLive) {
+                  actionButton = `<button onclick="stopStream('${s.id}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded text-white font-bold text-xs transition-colors">STOP</button>`;
+                } else if (isScheduled) {
+                  actionButton = `<button onclick="stopStream('${s.id}')" class="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 rounded text-black font-bold text-xs transition-colors">CANCEL</button>`;
+                } else {
+                  actionButton = `<button onclick="startStream('${s.id}')" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 rounded text-black font-bold text-xs transition-colors">START</button>`;
+                }
+
+                return `
+            <tr class="hover:bg-gray-700/50" data-stream-id="${s.id}">
+                <td class="px-6 py-4"><input type="checkbox" class="rounded bg-gray-700 stream-checkbox" value="${s.id}"></td>
+                <td class="px-6 py-4 flex items-center gap-2 min-w-[200px]">
+                  <div class="w-2 h-2 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : (isScheduled ? 'bg-yellow-500' : 'bg-gray-500')}"></div>
+                  <span class="truncate max-w-[250px]" title="${s.title}">${s.title}</span>
+                </td>
+                <td class="px-5 py-4 text-center text-gray-400 truncate max-w-[150px] whitespace-nowrap" title="${videoName}">${videoName}</td>
+                <td class="px-5 py-4 text-center text-green-400 font-mono whitespace-nowrap">${startTime}</td>
+                <td class="px-5 py-4 text-center text-gray-400 font-mono whitespace-nowrap">${endTime}</td>
+                <td class="px-5 py-4 text-center text-gray-400 font-mono whitespace-nowrap">${duration}</td>
+                <td class="px-5 py-4 text-center whitespace-nowrap">
+                  ${isLive ?
+                    `<div class="inline-flex items-center rounded overflow-hidden text-white font-bold text-xs" data-stream-id="${s.id}" data-start-time="${s.start_time}">
+                      <span class="px-2 py-1 bg-red-600">LIVE</span>
+                      <span class="live-timer px-2 py-1 bg-black font-mono">0:00</span>
+                    </div>` :
+                    `<span class="px-2 py-0.5 rounded border text-[10px] ${isScheduled ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-gray-700 border-gray-600'}">
+                      ${s.status.toUpperCase()}
+                    </span>`
+                  }
+                </td>
+                <td class="px-6 py-4 text-center flex items-center justify-center gap-2 whitespace-nowrap">
+                    ${actionButton}
+                    <button onclick="editStream('${s.id}')" class="p-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-200 transition-colors ${isLive ? 'opacity-50 cursor-not-allowed' : ''}" title="Edit" ${isLive ? 'disabled' : ''}><i class="ti ti-edit"></i></button>
+                    <button onclick="deleteStream('${s.id}')" class="p-1.5 bg-red-900/40 hover:bg-red-900/60 text-red-200 rounded transition-colors ${isLive ? 'opacity-50 cursor-not-allowed' : ''}" title="Delete" ${isLive ? 'disabled' : ''}><i class="ti ti-trash"></i></button>
+                </td>
+            </tr>`;
+              }).join('') || '<tr><td colspan="8" class="text-center py-4 text-gray-500 italic">No streams found for this channel.</td></tr>';
+
+
+              document.getElementById('videoSearchInput')?.addEventListener('input', (e) => populateVideoGridV2(videos, e.target.value));
+
+              // --- Bulk Delete Logic ---
+              document.getElementById('selectAllStreams')?.addEventListener('change', function (e) {
+                const checkboxes = document.querySelectorAll('.stream-checkbox');
+                checkboxes.forEach(cb => cb.checked = e.target.checked);
+              });
+
+              async function deleteSelectedStreams() {
+                const checkboxes = document.querySelectorAll('.stream-checkbox:checked');
+                if (checkboxes.length === 0) return await showAlert('Pilih minimal satu stream untuk dihapus.');
+
+                if (!(await showConfirm(`Yakin ingin menghapus ${checkboxes.length} stream terpilih?`))) return;
+
+                const btn = document.getElementById('btnHapusMasal');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ti ti-loader animate-spin"></i> Menghapus...';
+
+                const ids = Array.from(checkboxes).map(cb => cb.value);
+
+                try {
+                  const response = await fetch('/api/streams/bulk-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids })
+                  });
+
+                  if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server responded with ${response.status}: ${errorText}`);
+                  }
+
+                  const result = await response.json();
+                  if (result.success) {
+                    window.location.reload();
+                  } else {
+                    await showAlert('Gagal: ' + (result.error || 'Unknown error'));
+                  }
+                } catch (err) {
+                  console.error('[Bulk Delete Error]', err);
+                  await showAlert('Gagal menghapus masal: ' + err.message);
+                } finally {
+                  btn.disabled = false;
+                  btn.innerHTML = originalText;
+                }
+              }
+              window.deleteSelectedStreams = deleteSelectedStreams;
+
+              const createBtn = document.getElementById('createStreamBtn');
+              if (createBtn) {
+                createBtn.addEventListener('click', async function () {
+                  const form = document.getElementById('newStreamForm');
+                  if (!form) return;
+
+                  const mode = form.getAttribute('data-mode') || 'create';
+                  const streamId = form.getAttribute('data-id');
+
+                  const originalBtnText = createBtn.innerHTML;
+                  createBtn.disabled = true;
+                  createBtn.innerHTML = '<i class="ti ti-loader animate-spin"></i> ' + (mode === 'edit' ? 'Updating...' : 'Creating...');
+
+                  try {
+                    const formData = new FormData(form);
+                    const data = Object.fromEntries(formData.entries());
+
+                    // Convert Local Time to ISO UTC sebelum kirim ke server
+                    if (data.scheduleStartTime) {
+                      const localDate = new Date(data.scheduleStartTime);
+                      if (!isNaN(localDate.getTime())) {
+                        data.scheduleStartTime = localDate.toISOString();
+                      }
+                    }
+                    if (data.scheduleEndTime) {
+                      const localDate = new Date(data.scheduleEndTime);
+                      if (!isNaN(localDate.getTime())) {
+                        data.scheduleEndTime = localDate.toISOString();
+                      }
+                    }
+
+                    // Debugging
+                    console.log(`[Submission V2] Mode: ${mode}, ID: ${streamId}`);
+                    console.log('[Submission V2] Data being sent (UTC):', data);
+
+                    const url = mode === 'edit' ? `/api/streams/${streamId}` : '/api/streams';
+                    const method = mode === 'edit' ? 'PUT' : 'POST';
+
+                    const response = await fetch(url, {
+                      method: method,
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+                    console.log('[Submission V2] Server response:', result);
+
+                    if (result.success) {
+                      window.location.reload();
+                    } else {
+                      await showAlert('Failed: ' + (result.error || result.message || 'Unknown error'));
+                    }
+                  } catch (err) {
+                    console.error('[Submission V2] Error:', err);
+                    await showAlert('Error connecting to server');
+                  } finally {
+                    createBtn.disabled = false;
+                    createBtn.innerHTML = originalBtnText;
+                  }
+                });
+              }
+            });
+
+            // Update LIVE timer setiap detik
+            function updateLiveTimers() {
+              document.querySelectorAll('[data-start-time]').forEach(badge => {
+                const startTime = badge.getAttribute('data-start-time');
+                if (!startTime) return;
+
+                const timer = badge.querySelector('.live-timer');
+                if (!timer) return;
+
+                const start = new Date(startTime);
+                const now = new Date();
+                const elapsed = Math.floor((now - start) / 1000); // detik
+
+                const hours = Math.floor(elapsed / 3600);
+                const minutes = Math.floor((elapsed % 3600) / 60);
+                const seconds = elapsed % 60;
+
+                // Format: 0:20 atau 1:05:30
+                if (hours > 0) {
+                  timer.textContent = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                  timer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+              });
+            }
+
+            // Update timer setiap detik
+            setInterval(updateLiveTimers, 1000);
+            // Run immediately
+            updateLiveTimers();
+
+            // Auto-refresh halaman setiap 10 detik untuk update status stream
+            // TAPI hanya jika tidak ada modal yang sedang terbuka
+            setInterval(() => {
+              // Check apakah ada modal yang terbuka
+              const isModalOpen = document.querySelector('.modal')?.classList.contains('show') ||
+                document.querySelector('[role="dialog"]')?.style.display !== 'none' ||
+                document.querySelector('#streamModal')?.classList.contains('show');
+
+              // Hanya refresh jika tidak ada modal yang terbuka
+              if (!isModalOpen) {
+                window.location.reload();
+              }
+            }, 10000); // 10 detik
+          </script>
+
+          <%- include('partials/stream-modal') %>
+            <%- include('partials/monitor-modal') %>
+              <%- include('partials/delete-modal') %>
+                <script src="/js/dashboard.js?v=2.7"></script>

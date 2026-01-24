@@ -1,0 +1,86 @@
+<% layout('layout') -%>
+
+    <% block('header_left', ` <h1 class="text-lg font-semibold text-blue-400 truncate max-w-[200px]">
+        ${channel.channel_name}
+        </h1>
+        `) -%>
+
+        <% block('header_right', ` <a href="/dashboard/${channel.slug || channel.id}"
+            class="px-4 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-full text-xs font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 transform hover:scale-105 active:scale-95 mr-4">
+            <i class="ti ti-arrow-left"></i>
+            <span>Back</span>
+            </a>
+            `) -%>
+
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold flex items-center gap-2">
+                        <i class="ti ti-photo text-primary"></i> Thumbnails
+                    </h2>
+                </div>
+                <div>
+                    <button onclick="document.getElementById('uploadThumbModal').classList.remove('hidden')"
+                        class="flex items-center gap-2 bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="ti ti-upload"></i>
+                        <span>Upload Thumbnail</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <% if (thumbnails && thumbnails.length> 0) { %>
+                    <% thumbnails.forEach(function(thumb) { %>
+                        <div class="group relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
+                            <img src="<%= thumb.filepath %>" class="w-full h-full object-cover">
+                            <div
+                                class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
+                                <button class="text-white bg-red-600 p-2 rounded-full hover:bg-red-700"
+                                    onclick="deleteThumbnail('<%= thumb.id %>')"><i class="ti ti-trash"></i></button>
+                            </div>
+                        </div>
+                        <% }); %>
+                            <% } else { %>
+                                <div class="col-span-full text-center py-12 text-gray-500">No thumbnails uploaded.</div>
+                                <% } %>
+            </div>
+
+            <div id="uploadThumbModal"
+                class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+                <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm">
+                    <h3 class="text-lg font-bold mb-4">Upload Thumbnail</h3>
+                    <form id="thumbForm" enctype="multipart/form-data">
+                        <input type="hidden" name="youtube_channel_id" value="<%= channel.id %>">
+                        <input type="file" name="thumbnail" accept="image/*"
+                            class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-blue-600 mb-4">
+                        <div class="flex justify-end gap-2">
+                            <button type="button"
+                                onclick="document.getElementById('uploadThumbModal').classList.add('hidden')"
+                                class="px-3 py-1 text-gray-400">Cancel</button>
+                            <button type="submit" class="px-3 py-1 bg-primary text-white rounded">Upload</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                document.getElementById('thumbForm').addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    // Assuming there's a route /api/thumbnails/upload
+                    // Adjust endpoint as needed or create it
+                    try {
+                        const res = await fetch('/api/thumbnails/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        if ((await res.json()).success) location.reload();
+                    } catch (e) { console.error(e); }
+                });
+
+                async function deleteThumbnail(id) {
+                    if (await showConfirm('Delete?')) {
+                        await fetch(`/api/thumbnails/${id}`, { method: 'DELETE' });
+                        location.reload();
+                    }
+                }
+            </script>

@@ -1,0 +1,424 @@
+<% layout('layout') -%>
+  <div class="md:hidden mb-4" style="margin-top: -10px;">
+    <div class="bg-gray-800 rounded-lg px-3 py-2 shadow-md">
+      <div class="flex items-center justify-between gap-2 overflow-x-auto scrollbar-hide">
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <i class="ti ti-broadcast text-primary text-sm font-loaded"></i>
+          <span class="text-xs font-bold text-white">
+            <%= activeStreamsCount %>
+          </span>
+          <span class="text-[10px] text-gray-400">live</span>
+        </div>
+        <div class="w-px h-4 bg-gray-700 flex-shrink-0"></div>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <i class="ti ti-cpu text-blue-400 text-sm font-loaded"></i>
+          <span id="cpu-usage-mobile" class="text-xs font-bold text-white">0</span>
+          <span class="text-[10px] text-gray-400">%</span>
+        </div>
+        <div class="w-px h-4 bg-gray-700 flex-shrink-0"></div>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <i class="ti ti-device-sd-card text-green-400 text-sm font-loaded"></i>
+          <span id="memory-usage-mobile" class="text-xs font-bold text-white">0</span>
+          <span id="memory-total-mobile" class="text-[10px] text-gray-400">/ 0</span>
+        </div>
+        <div class="w-px h-4 bg-gray-700 flex-shrink-0"></div>
+        <div class="flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+          onclick="toggleNetworkDiskDisplay('mobile')">
+          <i class="ti ti-wifi text-yellow-400 text-sm font-loaded" id="toggle-icon-mobile"></i>
+          <div id="network-content-mobile" class="flex items-center gap-1">
+            <span class="text-[10px] text-blue-400">↑<span id="upload-speed-mobile" class="font-bold">0</span></span>
+            <span class="text-[10px] text-green-400">↓<span id="download-speed-mobile" class="font-bold">0</span></span>
+          </div>
+          <div id="disk-content-mobile" class="items-center gap-1" style="display: none;">
+            <span id="disk-used-mobile" class="text-xs font-bold text-white">0</span>
+            <span id="disk-total-mobile" class="text-[10px] text-gray-400">/ 0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hidden md:grid md:grid-cols-5 gap-3 mb-6">
+    <!-- Active Streams -->
+    <div class="bg-[#1e1e2e] rounded-xl p-3 shadow-lg border border-gray-800/50">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xs font-medium text-gray-400">Active Streams</h3>
+        <div class="w-7 h-7 bg-purple-500/20 rounded-lg flex items-center justify-center">
+          <i class="ti ti-broadcast text-purple-400 text-base"></i>
+        </div>
+      </div>
+      <p class="text-2xl font-bold text-white">
+        <%= activeStreamsCount %>
+      </p>
+    </div>
+
+    <!-- CPU Usage -->
+    <div class="bg-[#1e1e2e] rounded-xl p-3 shadow-lg border border-gray-800/50">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xs font-medium text-gray-400">CPU Usage</h3>
+        <div class="w-7 h-7 bg-blue-500/20 rounded-lg flex items-center justify-center">
+          <i class="ti ti-settings text-blue-400 text-base"></i>
+        </div>
+      </div>
+      <p class="text-2xl font-bold text-white"><span id="cpu-usage">0</span>%</p>
+      <div class="w-full bg-gray-800 rounded-full h-1 mt-1.5">
+        <div id="cpu-bar" class="bg-blue-500 h-1 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Memory -->
+    <div class="bg-[#1e1e2e] rounded-xl p-3 shadow-lg border border-gray-800/50">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xs font-medium text-gray-400">Memory</h3>
+        <div class="w-7 h-7 bg-purple-500/20 rounded-lg flex items-center justify-center">
+          <i class="ti ti-database text-purple-400 text-base"></i>
+        </div>
+      </div>
+      <p class="text-base font-bold text-white">
+        <span id="memory-usage">0 GB</span> <span id="memory-total" class="text-xs text-gray-500">/ 0 GB</span>
+      </p>
+      <div class="w-full bg-gray-800 rounded-full h-1 mt-1.5">
+        <div id="memory-bar" class="bg-purple-500 h-1 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Disk Usage -->
+    <div class="bg-[#1e1e2e] rounded-xl p-3 shadow-lg border border-gray-800/50">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xs font-medium text-gray-400">Disk Usage</h3>
+        <div class="w-7 h-7 bg-pink-500/20 rounded-lg flex items-center justify-center">
+          <i class="ti ti-disc text-pink-400 text-base"></i>
+        </div>
+      </div>
+      <p class="text-base font-bold text-white">
+        <span id="disk-used">0 GB</span> <span id="disk-total" class="text-xs text-gray-500">/ 0 GB</span>
+      </p>
+      <div class="w-full bg-gray-800 rounded-full h-1 mt-1.5">
+        <div id="disk-bar" class="bg-pink-500 h-1 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Internet Speed -->
+    <div class="bg-[#1e1e2e] rounded-xl p-3 shadow-lg border border-gray-800/50">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xs font-medium text-gray-400">Internet Speed</h3>
+        <div class="w-7 h-7 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+          <i class="ti ti-world text-cyan-400 text-base"></i>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-gray-400">↑ Upload</span>
+          <span id="upload-speed" class="font-bold text-green-400">0 Kbps</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-gray-400">↓ Download</span>
+          <span id="download-speed" class="font-bold text-green-400">0 Kbps</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Your Channels Section -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+        <i class="ti ti-brand-youtube text-red-500"></i>
+        Your Channels
+      </h2>
+      <a href="/auth/youtube"
+        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2">
+        <i class="ti ti-plus"></i>
+        <span>Add Channel</span>
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <% if (youtubeChannels && youtubeChannels.length> 0) { %>
+        <% youtubeChannels.forEach(function(channel) { %>
+          <div
+            class="bg-gradient-to-br from-gray-900 via-[#121212] to-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-800/50 hover:border-gray-700 transition-all group flex flex-col p-6 items-center text-center relative"
+            style="background-image: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 50%, #1a1a1a 100%);">
+            <div
+              class="absolute inset-0 bg-gradient-to-br from-purple-900/5 via-transparent to-blue-900/5 pointer-events-none">
+            </div>
+            <div class="relative z-10 w-full flex flex-col items-center">
+              <!-- Channel Avatar -->
+              <div class="relative mb-4">
+                <div
+                  class="w-24 h-24 rounded-full p-1 bg-gray-800 ring-2 ring-gray-700/50 group-hover:ring-emerald-500/50 transition-all overflow-hidden">
+                  <img src="<%= channel.channel_thumbnail %>" alt="<%= channel.channel_name %>"
+                    class="w-full h-full rounded-full object-cover">
+                </div>
+              </div>
+
+              <!-- Channel Name & Status -->
+              <div class="flex items-center gap-2 mb-2">
+                <h3 class="text-lg font-bold text-white truncate max-w-[180px]">
+                  <%= channel.channel_name %>
+                </h3>
+                <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+              </div>
+
+              <!-- Stats Bar -->
+              <div class="grid grid-cols-2 w-full gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-sm font-bold text-white">
+                    <%= channel.subscriber_count %>
+                  </div>
+                  <div class="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Subscribers</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-sm font-bold text-white">
+                    <%= channel.video_count || 0 %>
+                  </div>
+                  <div class="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Videos</div>
+                </div>
+              </div>
+
+              <!-- Separator Line -->
+              <div class="w-full border-t border-gray-800/50 mb-5"></div>
+
+              <!-- Stats Bar -->
+
+
+              <!-- Live Status -->
+              <div
+                class="flex items-center justify-center gap-3 text-[11px] font-medium text-gray-400 mb-6 bg-black/20 py-2 px-4 rounded-full w-fit">
+                <% if (channel.liveCount> 0) { %>
+                  <span
+                    class="bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                    LIVE <%= channel.liveCount %>
+                  </span>
+                  <% } else { %>
+                    <span class="flex items-center gap-1.5 whitespace-nowrap">
+                      <span class="w-1.5 h-1.5 rounded-full bg-gray-600"></span>
+                      <%= channel.liveCount %> Live
+                    </span>
+                    <% } %>
+                      <span class="text-gray-700">•</span>
+                      <span class="flex items-center gap-1.5 text-blue-400 whitespace-nowrap">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                        <%= channel.scheduledCount %> Scheduled
+                      </span>
+              </div>
+
+              <!-- Actions Grid -->
+              <div class="w-full grid grid-cols-2 gap-2 mt-auto">
+                <a href="/dashboard/<%= channel.slug || channel.id %>"
+                  class="py-1.5 bg-[#1a2e21] hover:bg-emerald-600 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold transition-all border border-emerald-900/30 text-center">
+                  Dashboard
+                </a>
+                <button onclick="syncChannelV2('<%= channel.id %>', event)"
+                  class="py-1.5 bg-[#132322] hover:bg-teal-600 hover:text-white hover:shadow-lg hover:shadow-teal-500/20 text-teal-400 rounded-lg text-xs font-bold transition-all border border-teal-900/30">
+                  Sync
+                </button>
+                <button
+                  onclick="editChannelV2('<%= channel.id %>', '<%= channel.channel_name %>', '<%= channel.slug %>', '<%= channel.description %>', '<%= channel.channel_color %>')"
+                  class="py-1.5 bg-[#252529] hover:bg-gray-600 hover:text-white hover:shadow-lg hover:shadow-gray-500/20 text-gray-300 rounded-lg text-xs font-bold transition-all border border-gray-700/30">
+                  Edit
+                </button>
+                <button onclick="confirmDeleteChannelV2('<%= channel.id %>', '<%= channel.channel_name %>')"
+                  class="py-1.5 bg-[#2a1b1b] hover:bg-red-600 hover:text-white hover:shadow-lg hover:shadow-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all border border-red-900/30">
+                  Hapus
+                </button>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+            <% } else { %>
+              <div
+                class="col-span-full py-12 flex flex-col items-center justify-center text-gray-400 bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-700">
+                <i class="ti ti-brand-youtube text-6xl mb-4 text-gray-600"></i>
+                <p class="text-xl">No channels connected yet.</p>
+                <a href="/auth/youtube"
+                  class="mt-4 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                  Connect YouTube Account
+                </a>
+              </div>
+              <% } %>
+    </div>
+  </div>
+
+  <!-- Modal Edit Channel V2 -->
+  <div id="editChannelModalV2"
+    class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+    <div class="bg-[#121212] border border-gray-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+      <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="ti ti-edit text-emerald-400"></i>
+          Edit Channel
+        </h3>
+        <button onclick="closeEditChannelModalV2()" class="text-gray-500 hover:text-white transition-colors">
+          <i class="ti ti-x text-xl"></i>
+        </button>
+      </div>
+      <form onsubmit="saveChannelInfoV2(event)" class="p-6 space-y-4">
+        <input type="hidden" id="editChannelIdV2">
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Nama
+            Channel</label>
+          <input type="text" id="editChannelNameV2" required
+            class="w-full bg-black/40 border border-gray-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all"
+            placeholder="Masukkan nama channel">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Custom
+            Slug</label>
+          <input type="text" id="editChannelSlugV2"
+            class="w-full bg-black/40 border border-gray-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all"
+            placeholder="channel-ku">
+          <p class="text-[9px] text-gray-600 mt-1 italic">URL: /dashboard/[slug]</p>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Deskripsi</label>
+          <textarea id="editChannelDescV2" rows="3"
+            class="w-full bg-black/40 border border-gray-800 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all resize-none"
+            placeholder="Deskripsi singkat channel..."></textarea>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Warna Tema</label>
+          <div class="flex gap-3">
+            <input type="color" id="editChannelColorV2"
+              class="w-12 h-10 bg-black/40 border border-gray-800 rounded-lg p-1 cursor-pointer">
+            <input type="text" id="editChannelColorTextV2" readonly
+              class="flex-1 bg-black/40 border border-gray-800 rounded-lg px-4 py-2 text-sm text-gray-400 font-mono">
+          </div>
+        </div>
+        <div class="pt-4 flex gap-3">
+          <button type="button" onclick="closeEditChannelModalV2()"
+            class="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-bold transition-all">
+            Batal
+          </button>
+          <button type="submit"
+            class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-lg shadow-emerald-900/20 transition-all">
+            Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Kelola Keys V2 -->
+  <div id="manageKeysModalV2"
+    class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-1">
+    <div
+      class="bg-[#121212] border border-gray-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col"
+      style="height: calc(100vh - 8px);">
+      <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/10">
+        <div>
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="ti ti-key text-purple-400"></i>
+            Manajer Stream Key
+          </h3>
+          <p class="text-[10px] text-gray-500 font-medium">Kelola pool stream key untuk channel ini</p>
+        </div>
+        <button onclick="closeManageKeysModalV2()" class="text-gray-500 hover:text-white transition-colors">
+          <i class="ti ti-x text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto">
+        <!-- Stats Summary -->
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="bg-black/40 border border-gray-800 p-3 rounded-xl text-center">
+            <div id="totalKeysCountV2" class="text-xl font-bold text-white">0</div>
+            <div class="text-[9px] text-gray-600 uppercase font-bold tracking-widest">Total Keys</div>
+          </div>
+          <div class="bg-black/40 border border-gray-800 p-3 rounded-xl text-center">
+            <div id="availableKeysCountV2" class="text-xl font-bold text-emerald-500">0</div>
+            <div class="text-[9px] text-gray-600 uppercase font-bold tracking-widest">Tersedia</div>
+          </div>
+          <div class="bg-black/40 border border-gray-800 p-3 rounded-xl text-center">
+            <div id="inUseKeysCountV2" class="text-xl font-bold text-blue-400">0</div>
+            <div class="text-[9px] text-gray-600 uppercase font-bold tracking-widest">Digunakan</div>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="flex flex-wrap gap-2 mb-6">
+          <button onclick="syncFromYouTubeV2(event)"
+            class="flex-1 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 border border-gray-700">
+            <i class="ti ti-brand-youtube text-red-500"></i>
+            Sync dari YouTube
+          </button>
+          <button onclick="toggleBulkCreateV2()"
+            class="flex-1 py-2 bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 border border-purple-900/30">
+            <i class="ti ti-plus"></i>
+            Buat Bulk
+          </button>
+        </div>
+
+        <!-- Bulk Create Form (Hidden by default) -->
+        <div id="bulkCreateFormContainerV2"
+          class="hidden bg-purple-950/10 border border-purple-900/30 rounded-xl p-4 mb-6 space-y-3">
+          <div class="flex gap-3">
+            <div class="flex-1">
+              <label class="block text-[9px] font-bold text-purple-400 uppercase mb-1">Prefix Nama</label>
+              <input type="text" id="bulkKeyPrefixV2" placeholder="Contoh: Stream"
+                class="w-full bg-black/40 border border-gray-800 rounded-md px-3 py-1.5 text-xs text-white">
+            </div>
+            <div class="w-24">
+              <label class="block text-[9px] font-bold text-purple-400 uppercase mb-1">Jumlah</label>
+              <input type="number" id="bulkKeyCountV2" value="5" min="1" max="50"
+                class="w-full bg-black/40 border border-gray-800 rounded-md px-3 py-1.5 text-xs text-white">
+            </div>
+          </div>
+          <button onclick="processBulkCreateV2()"
+            class="w-full py-2 bg-purple-600 text-white rounded-md text-xs font-bold">Bangkitkan Keys</button>
+        </div>
+
+        <!-- Keys Table -->
+        <div class="border border-gray-800 rounded-xl overflow-hidden bg-black/20">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="bg-gray-800/50">
+                <th class="px-6 py-3 text-[9px] font-bold text-gray-500 uppercase tracking-widest w-16 text-center">#
+                </th>
+                <th class="px-6 py-3 text-[9px] font-bold text-gray-500 uppercase tracking-widest">Nama Stream</th>
+                <th class="px-6 py-3 text-[9px] font-bold text-gray-500 uppercase tracking-widest">Key</th>
+                <th class="px-6 py-3 text-[9px] font-bold text-gray-500 uppercase tracking-widest text-center">Status
+                </th>
+                <th class="px-6 py-3 text-[9px] font-bold text-gray-500 uppercase tracking-widest text-right">Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody id="streamKeysTableBodyV2" class="divide-y divide-gray-800/50">
+              <!-- Load via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- Modal Konfirmasi Hapus Channel -->
+    <div id="deleteChannelModal"
+      class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+      <div
+        class="bg-[#121212] border border-gray-800 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl transform transition-all scale-100 opacity-100">
+        <div class="p-6 text-center">
+          <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="ti ti-alert-triangle text-3xl text-red-500"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">Hapus Channel?</h3>
+          <p class="text-gray-400 text-sm mb-6">
+            Apakah Anda yakin ingin menghapus channel <span id="deleteChannelName" class="font-bold text-white"></span>?
+            <br>Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="closeDeleteChannelModal()"
+              class="py-2.5 px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-bold transition-colors">
+              Batal
+            </button>
+            <button id="confirmDeleteBtn"
+              class="py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2">
+              <i class="ti ti-trash"></i>
+              <span>Hapus Channel</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/dashboard.js?v=2.1"></script>

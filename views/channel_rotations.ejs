@@ -1,0 +1,1283 @@
+<% layout('layout') -%>
+
+    <!-- Header & Navigation -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div class="flex items-center gap-4">
+            <a href="/dashboard/<%= channel.slug || channel.id %>"
+                class="p-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white transition-colors">
+                <i class="ti ti-arrow-left text-xl"></i>
+            </a>
+            <div>
+                <h2 class="text-2xl font-bold flex items-center gap-3">
+                    Rotations
+                    <span
+                        class="text-sm font-normal text-gray-400 bg-dark-700 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <img src="<%= channel.thumbnail || '/images/default-channel.png' %>"
+                            class="w-4 h-4 rounded-full">
+                        <%= channel.name %>
+                    </span>
+                </h2>
+                <p class="text-gray-400 text-sm mt-1">Manage scheduled rotations for this channel</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+            <button id="btnGenerateSmart" onclick="generateSmartRotation()"
+                class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-purple-500/20 transform hover:scale-105 active:scale-95">
+                <i class="ti ti-brain"></i>
+                <span>Generate Smart Rotation</span>
+            </button>
+            <button onclick="openCreateRotationModal()"
+                class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-primary/20 transform hover:scale-105 active:scale-95">
+                <i class="ti ti-plus"></i>
+                <span>New Rotation</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Functional Description Info -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div class="bg-dark-800/40 p-4 rounded-xl border border-blue-500/20 flex gap-4">
+            <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+                <i class="ti ti-manual-gearbox text-blue-400 text-xl"></i>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-blue-400 mb-1">MODE MANUAL (New Rotation)</h4>
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    Gunakan ini untuk membuat jadwal live yang <strong>tetap dan berulang</strong> setiap harinya.
+                    Misal: "Live Pagi" jam 08:00 - 10:00 dengan video/playlist yang Anda pilih sendiri.
+                </p>
+            </div>
+        </div>
+        <div class="bg-dark-800/40 p-4 rounded-xl border border-purple-500/20 flex gap-4">
+            <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                <i class="ti ti-brain text-purple-400 text-xl"></i>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-purple-400 mb-1">MODE SMART (Cerdas Pipen)</h4>
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    Otomatis membuat jadwal live <strong>acak (5-10 live/hari)</strong> dengan durasi acak (3-7 jam).
+                    Sistem menganalisis aktivitas penonton Anda untuk menentukan jam tayang terbaik selama 14 hari ke
+                    depan.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rotations List -->
+    <% if (rotations && rotations.length> 0) { %>
+        <!-- Mobile List -->
+        <div class="block md:hidden space-y-4">
+            <% rotations.forEach(rotation=> { %>
+                <div class="bg-dark-800 rounded-xl shadow-md overflow-hidden border border-gray-700/50"
+                    data-rotation-id="<%= rotation.id %>">
+                    <div class="p-4">
+                        <div class="flex gap-4">
+                            <div class="relative flex-shrink-0 w-24 h-16 bg-dark-700 rounded-lg overflow-hidden">
+                                <% if (rotation.first_thumbnail) { %>
+                                    <img src="/uploads/thumbnails/<%= rotation.first_thumbnail.split('/').pop() %>"
+                                        class="w-full h-full object-cover" alt="<%= rotation.name %>"
+                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="w-full h-full bg-primary/20 items-center justify-center hidden">
+                                        <i class="ti ti-rotate text-primary text-xl"></i>
+                                    </div>
+                                    <% } else { %>
+                                        <div class="w-full h-full bg-primary/20 flex items-center justify-center">
+                                            <i class="ti ti-rotate text-primary text-xl"></i>
+                                        </div>
+                                        <% } %>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-base font-medium text-white truncate leading-tight mb-1">
+                                    <%= rotation.name %>
+                                </h4>
+                                <div class="flex items-center gap-2 text-xs text-gray-400 mb-2">
+                                    <span class="bg-dark-700 px-1.5 py-0.5 rounded text-gray-300">
+                                        <%= rotation.item_count %> items
+                                    </span>
+                                    <% if (rotation.repeat_mode==='daily' ) { %>
+                                        <span class="text-blue-400">Ã¢â‚¬Â¢ Daily</span>
+                                        <% } %>
+                                </div>
+
+                                <% if (rotation.start_time && rotation.end_time) { %>
+                                    <div
+                                        class="flex items-center gap-2 text-xs font-mono bg-dark-900/50 p-1.5 rounded w-fit">
+                                        <span class="text-yellow-500">
+                                            <%= new Date(rotation.start_time).toLocaleTimeString('en-US',
+                                                {hour: '2-digit' , minute: '2-digit' , hour12: false}) %>
+                                        </span>
+                                        <span class="text-gray-600">Ã¢â€ â€™</span>
+                                        <span class="text-green-500">
+                                            <%= new Date(rotation.end_time).toLocaleTimeString('en-US', {hour: '2-digit'
+                                                , minute: '2-digit' , hour12: false}) %>
+                                        </span>
+                                    </div>
+                                    <% } %>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Bar -->
+                    <div class="bg-dark-900/50 px-4 py-2 border-t border-gray-700/50 flex items-center justify-between">
+                        <% if (rotation.status==='active' ) { %>
+                            <span
+                                class="flex items-center text-green-400 text-xs font-medium bg-green-500/10 px-2 py-0.5 rounded-full">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse mr-1.5"></span>
+                                Running Ã¢â‚¬Â¢ Item <%= (rotation.current_index || 0) + 1 %>/<%= rotation.item_count %>
+                            </span>
+                            <% } else if (rotation.status==='paused' ) { %>
+                                <span
+                                    class="flex items-center text-yellow-400 text-xs font-medium bg-yellow-500/10 px-2 py-0.5 rounded-full">
+                                    <i class="ti ti-player-pause mr-1"></i> Paused
+                                </span>
+                                <% } else { %>
+                                    <span
+                                        class="flex items-center text-gray-400 text-xs font-medium bg-gray-500/10 px-2 py-0.5 rounded-full">
+                                        Inactive
+                                    </span>
+                                    <% } %>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="px-4 py-3 bg-dark-700/20 flex gap-2">
+                        <% if (rotation.status !=='active' ) { %>
+                            <button onclick="activateRotation('<%= rotation.id %>')"
+                                class="flex-1 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-1">
+                                <i class="ti ti-player-play"></i> Start
+                            </button>
+                            <% } else { %>
+                                <button onclick="stopRotation('<%= rotation.id %>')"
+                                    class="flex-1 py-2 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/30 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-1">
+                                    <i class="ti ti-player-stop"></i> Stop
+                                </button>
+                                <% } %>
+
+                                    <button onclick="editRotation('<%= rotation.id %>')"
+                                        class="p-2 bg-dark-700 hover:bg-dark-600 text-gray-300 rounded-lg transition-colors">
+                                        <i class="ti ti-edit"></i>
+                                    </button>
+
+                                    <% if (rotation.status !=='active' ) { %>
+                                        <button onclick="deleteRotation('<%= rotation.id %>')"
+                                            class="p-2 bg-dark-700 hover:bg-red-500/20 hover:text-red-400 text-gray-300 rounded-lg transition-colors">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                        <% } %>
+                    </div>
+                </div>
+                <% }); %>
+        </div>
+
+        <!-- Desktop Table -->
+        <div class="hidden md:block bg-dark-800 rounded-xl shadow-lg border border-gray-700/50 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-dark-700/80">
+                        <tr>
+                            <th
+                                class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Rotation Name
+                            </th>
+                            <th
+                                class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Schedule</th>
+                            <th
+                                class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Repeat</th>
+                            <th
+                                class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Status</th>
+                            <th
+                                class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Current Item
+                            </th>
+                            <th
+                                class="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700/50">
+                        <% rotations.forEach(rotation=> { %>
+                            <tr class="hover:bg-dark-700/30 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-4">
+                                        <div
+                                            class="w-16 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-dark-900 border border-gray-700 relative group-hover:border-primary/50 transition-colors">
+                                            <% if (rotation.first_thumbnail) { %>
+                                                <img src="/uploads/thumbnails/<%= rotation.first_thumbnail.split('/').pop() %>"
+                                                    alt="" class="w-full h-full object-cover"
+                                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                <div
+                                                    class="w-full h-full bg-primary/10 items-center justify-center hidden">
+                                                    <i class="ti ti-rotate text-primary"></i>
+                                                </div>
+                                                <% } else { %>
+                                                    <div
+                                                        class="w-full h-full bg-primary/10 flex items-center justify-center">
+                                                        <i class="ti ti-rotate text-primary text-xl"></i>
+                                                    </div>
+                                                    <% } %>
+                                        </div>
+                                        <div>
+                                            <div
+                                                class="text-sm font-medium text-white group-hover:text-primary transition-colors">
+                                                <%= rotation.name %>
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                <%= rotation.item_count %> items
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <% if (rotation.start_time && rotation.end_time) { %>
+                                        <div class="flex flex-col gap-0.5 text-xs font-mono">
+                                            <span class="text-yellow-500">Starts: <%= new
+                                                    Date(rotation.start_time).toLocaleTimeString('en-US',
+                                                    {hour: '2-digit' , minute: '2-digit' , hour12: false}) %></span>
+                                            <span class="text-green-500">Ends: <%= new
+                                                    Date(rotation.end_time).toLocaleTimeString('en-US', {hour: '2-digit'
+                                                    , minute: '2-digit' , hour12: false}) %></span>
+                                        </div>
+                                        <% } else { %>
+                                            <span class="text-sm text-gray-500">â€”</span>
+                                            <% } %>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <% if (rotation.repeat_mode==='daily' ) { %>
+                                        <span
+                                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">Daily</span>
+                                        <% } else if (rotation.repeat_mode==='weekly' ) { %>
+                                            <span
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">Weekly</span>
+                                            <% } else { %>
+                                                <span class="text-gray-500 text-sm">No Repeat</span>
+                                                <% } %>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <% if (rotation.status==='active' ) { %>
+                                        <span
+                                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                            Running
+                                        </span>
+                                        <% } else if (rotation.status==='paused' ) { %>
+                                            <span
+                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                                                <i class="ti ti-player-pause"></i> Paused
+                                            </span>
+                                            <% } else if (rotation.status==='completed' ) { %>
+                                                <span
+                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                                    <i class="ti ti-check"></i> Completed
+                                                </span>
+                                                <% } else { %>
+                                                    <span
+                                                        class="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-500 border border-gray-500/20">Inactive</span>
+                                                    <% } %>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <% if (rotation.status==='active' ) { %>
+                                        <div
+                                            class="text-sm bg-dark-900/50 px-2 py-1 rounded border border-gray-700/50 inline-block">
+                                            <span class="text-gray-400 text-xs">Playing:</span>
+                                            <span class="text-white font-medium ml-1">#<%= (rotation.current_index || 0)
+                                                    + 1 %></span>
+                                            <span class="text-gray-600 text-xs mx-1">/</span>
+                                            <span class="text-gray-400 text-xs">
+                                                <%= rotation.item_count %>
+                                            </span>
+                                        </div>
+                                        <% } else { %>
+                                            <span class="text-gray-600 text-sm">â€”</span>
+                                            <% } %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <% if (rotation.status !=='active' ) { %>
+                                            <button onclick="activateRotation('<%= rotation.id %>')"
+                                                class="p-1.5 text-green-500 hover:bg-green-500/10 rounded transition-colors"
+                                                title="Start Rotation">
+                                                <i class="ti ti-player-play"></i>
+                                            </button>
+                                            <% } else { %>
+                                                <button onclick="stopRotation('<%= rotation.id %>')"
+                                                    class="p-1.5 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                                    title="Stop Rotation">
+                                                    <i class="ti ti-player-stop"></i>
+                                                </button>
+                                                <% } %>
+
+                                                    <button onclick="editRotation('<%= rotation.id %>')"
+                                                        class="p-1.5 text-blue-400 hover:bg-blue-400/10 rounded transition-colors"
+                                                        title="Edit">
+                                                        <i class="ti ti-edit"></i>
+                                                    </button>
+
+                                                    <% if (rotation.status !=='active' ) { %>
+                                                        <button onclick="deleteRotation('<%= rotation.id %>')"
+                                                            class="p-1.5 text-gray-400 hover:bg-red-500/10 hover:text-red-400 rounded transition-colors"
+                                                            title="Delete">
+                                                            <i class="ti ti-trash"></i>
+                                                        </button>
+                                                        <% } %>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <% } else { %>
+            <!-- Empty State -->
+            <div class="bg-dark-800 rounded-xl p-12 border border-gray-700/50 text-center shadow-lg">
+                <div
+                    class="w-20 h-20 bg-dark-700/50 rounded-full flex items-center justify-center mx-auto mb-6 ring-4 ring-dark-800">
+                    <i class="ti ti-rotate text-4xl text-gray-500"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">No Rotations for <%= channel.name %>
+                </h3>
+                <p class="text-gray-400 mb-8 max-w-md mx-auto">Create scheduled playlists that automatically switch
+                    content
+                    based on time slots.</p>
+                <button onclick="openCreateRotationModal()"
+                    class="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg inline-flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5">
+                    <i class="ti ti-plus"></i>
+                    <span>Create First Rotation</span>
+                </button>
+            </div>
+            <% } %>
+
+                <!-- Create/Edit Modal -->
+                <div id="createRotationModal"
+                    class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden modal-overlay">
+                    <div class="flex h-full justify-center">
+                        <div
+                            class="bg-dark-800 shadow-2xl w-full max-w-3xl modal-container flex flex-col h-full border-x border-gray-700 transition-all duration-300 transform translate-y-full opacity-0">
+
+                            <!-- Modal Header -->
+                            <div
+                                class="flex-shrink-0 flex items-center justify-between px-6 py-2 border-b border-gray-700 bg-dark-900/50 rounded-t-xl">
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2"
+                                    id="rotationModalTitle">
+                                    <i class="ti ti-rotate text-primary"></i> Create New Rotation
+                                </h3>
+                                <button onclick="closeCreateRotationModal()"
+                                    class="text-gray-400 hover:text-white transition-colors p-1 hover:bg-dark-700 rounded-lg">
+                                    <i class="ti ti-x text-xl"></i>
+                                </button>
+                            </div>
+
+                            <!-- Modal Body -->
+                            <div class="p-6 overflow-y-auto flex-grow custom-scrollbar">
+                                <form id="rotationForm" class="space-y-6">
+                                    <input type="hidden" id="rotationId" name="rotationId" value="">
+
+                                    <!-- Hidden Channel ID (Auto-filled) -->
+                                    <input type="hidden" id="rotationChannelId" name="rotationChannelId"
+                                        value="<%= channel.id %>">
+
+                                    <div class="grid grid-cols-1 gap-6">
+                                        <!-- Name Input -->
+                                        <div>
+                                            <label class="text-sm font-medium text-gray-300 block mb-1.5">Rotation
+                                                Name</label>
+                                            <input type="text" id="rotationName" name="rotationName"
+                                                class="w-full px-4 py-2.5 bg-dark-700 border border-gray-600 rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary placeholder-gray-500"
+                                                placeholder="e.g., Morning Jazz & Lofi" required>
+                                        </div>
+
+                                        <!-- Schedule Section -->
+                                        <div class="bg-dark-700/30 p-4 rounded-xl border border-gray-700/50">
+                                            <div class="flex items-center justify-between mb-4">
+                                                <span class="text-sm font-bold text-white flex items-center gap-2">
+                                                    <i class="ti ti-clock text-primary"></i> Schedule Config
+                                                </span>
+                                                <span id="rotationServerTime"
+                                                    class="text-xs font-mono text-gray-400 bg-dark-900 px-2 py-1 rounded border border-gray-700">
+                                                    Server: loading...
+                                                </span>
+                                            </div>
+
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label class="text-xs font-medium text-gray-400 block mb-1.5">Start
+                                                        Time</label>
+                                                    <input type="time" id="rotationStartTime" name="rotationStartTime"
+                                                        class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white focus:border-primary [color-scheme:dark]"
+                                                        required>
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-medium text-gray-400 block mb-1.5">End
+                                                        Time</label>
+                                                    <input type="time" id="rotationEndTime" name="rotationEndTime"
+                                                        class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white focus:border-primary [color-scheme:dark]"
+                                                        required>
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-medium text-gray-400 block mb-1.5">Repeat
+                                                        Mode</label>
+                                                    <select id="repeatMode" name="repeatMode"
+                                                        class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white focus:border-primary">
+                                                        <option value="daily" selected>Daily</option>
+                                                        <option value="weekly">Weekly</option>
+                                                        <option value="monthly">Monthly</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3 flex justify-end">
+                                                <span id="rotationDurationBadge"
+                                                    class="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded">Duration:
+                                                    00:00</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Global Settings -->
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="text-sm font-medium text-gray-300 block mb-1.5">Default
+                                                    Privacy</label>
+                                                <select id="globalPrivacy" name="globalPrivacy"
+                                                    class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white text-sm">
+                                                    <option value="public">Public</option>
+                                                    <option value="unlisted" selected>Unlisted</option>
+                                                    <option value="private">Private</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="text-sm font-medium text-gray-300 block mb-1.5">Default
+                                                    Category</label>
+                                                <select id="globalCategory" name="globalCategory"
+                                                    class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white text-sm">
+                                                    <option value="10">Music</option>
+                                                    <option value="20">Gaming</option>
+                                                    <option value="22">People & Blogs</option>
+                                                    <option value="24">Entertainment</option>
+                                                    <option value="28">Science & Technology</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Rotation Items -->
+                                    <div class="border-t border-gray-700 pt-6">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                                <i class="ti ti-playlist text-blue-400"></i> Playlist Items
+                                            </h4>
+                                            <span class="text-xs text-gray-500">Drag items to reorder (Coming
+                                                Soon)</span>
+                                        </div>
+
+                                        <div id="rotationItemsContainer" class="space-y-4 mb-4">
+                                            <!-- Items injected JS -->
+                                        </div>
+
+                                        <button type="button" onclick="addRotationItem()"
+                                            class="w-full py-3 bg-dark-700/50 hover:bg-dark-700 border-2 border-dashed border-gray-600 hover:border-gray-500 text-gray-400 hover:text-white rounded-xl transition-all flex items-center justify-center gap-2 group">
+                                            <div
+                                                class="w-8 h-8 rounded-full bg-dark-600 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                                                <i class="ti ti-plus"></i>
+                                            </div>
+                                            <span class="font-medium">Add Video or Playlist</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Footer -->
+                            <div
+                                class="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-2 border-t border-gray-700 bg-dark-900/50 rounded-b-xl">
+                                <button onclick="closeCreateRotationModal()"
+                                    class="px-5 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">Cancel</button>
+                                <button type="button" onclick="saveRotation()"
+                                    class="px-6 py-2 text-sm font-medium bg-primary hover:bg-blue-600 text-white rounded-lg transition-colors shadow-lg shadow-primary/20">Save
+                                    Rotation</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Smart Rotation Configuration Modal -->
+                <div id="smartConfigModal"
+                    class="fixed inset-0 flex items-center justify-center z-[60] hidden bg-black/50 backdrop-blur-sm">
+                    <div
+                        class="modal-container bg-dark-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-700 transform transition-all duration-300 opacity-0 scale-95">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                <i class="ti ti-settings text-purple-400"></i>
+                                Smart Rotation Configuration
+                            </h3>
+                            <p class="text-sm text-gray-400 mb-6">Atur parameter untuk jadwal otomatis Anda</p>
+
+                            <div class="space-y-4">
+                                <!-- Days Count -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Jumlah Hari ke Depan
+                                    </label>
+                                    <input type="number" id="smartDaysCount" value="14" min="1" max="30"
+                                        class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                                    <p class="text-xs text-gray-500 mt-1">Default: 14 hari</p>
+                                </div>
+
+                                <!-- Min Daily Hours -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Minimal Jam Streaming per Hari
+                                    </label>
+                                    <input type="number" id="smartMinDailyHours" value="5" min="1" max="12"
+                                        class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                                    <p class="text-xs text-gray-500 mt-1">Default: 5 jam</p>
+                                </div>
+
+                                <!-- Max Daily Hours -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Maksimal Jam Streaming per Hari
+                                    </label>
+                                    <input type="number" id="smartMaxDailyHours" value="10" min="1" max="20"
+                                        class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                                    <p class="text-xs text-gray-500 mt-1">Default: 10 jam</p>
+                                </div>
+
+                                <!-- Video/Playlist Selection -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Content untuk Rotation
+                                    </label>
+                                    <select id="smartContentType"
+                                        class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                                        <option value="videos">Video Acak</option>
+                                        <option value="playlists">Playlist Acak</option>
+                                    </select>
+                                </div>
+
+                                <!-- Repeat Mode -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Repeat Mode
+                                    </label>
+                                    <select id="smartRepeatMode"
+                                        class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                                        <option value="once">Once (Tidak Repeat)</option>
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-3 mt-6">
+                                <button onclick="closeSmartConfigModal()"
+                                    class="px-5 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="button" onclick="confirmSmartGeneration()"
+                                    class="px-6 py-2 text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors shadow-lg shadow-purple-600/20">
+                                    <i class="ti ti-sparkles mr-1"></i>
+                                    Generate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Media Selection Modal (Removed because now inline) -->
+                <!-- Thumbnail Selection Modal (Removed because now inline) -->
+                <!-- Toast -->
+                <div id="toast"
+                    class="fixed top-6 right-6 bg-dark-800 text-white px-5 py-3 rounded-xl shadow-2xl z-50 hidden flex items-center border border-gray-700 transform transition-all duration-300 translate-y-[-20px] opacity-0">
+                    <i id="toast-icon" class="mr-3 text-xl"></i>
+                    <span id="toast-message" class="font-medium"></span>
+                </div>
+
+                <!-- Styles -->
+                <style>
+                    /* Selection Styles */
+                    .v2-selectable-card {
+                        transition: all 0.2s ease;
+                    }
+
+                    .item-selected {
+                        border-color: #3b82f6 !important;
+                        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+                    }
+
+                    .v2-check-marker {
+                        position: absolute;
+                        top: 4px;
+                        left: 4px;
+                        z-index: 10;
+                    }
+
+                    .custom-scrollbar::-webkit-scrollbar {
+                        width: 6px;
+                    }
+
+                    .custom-scrollbar::-webkit-scrollbar-track {
+                        background: rgba(0, 0, 0, 0.1);
+                    }
+
+                    .custom-scrollbar::-webkit-scrollbar-thumb {
+                        background: rgba(255, 255, 255, 0.1);
+                        border-radius: 3px;
+                    }
+
+                    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                        background: rgba(255, 255, 255, 0.2);
+                    }
+
+                    .active {
+                        transform: scale(1);
+                        opacity: 1;
+                    }
+
+                    .tab-active {
+                        background-color: #3b82f6 !important;
+                        color: white !important;
+                    }
+                </style>
+
+                <!-- Scripts -->
+                <script>
+                                        // Safe Data Initialization
+                    const videos = <%- JSON.stringify(videos || []) %>;
+                    const playlists = <%- JSON.stringify(playlists || []) %>;
+                    const thumbnails = <%- JSON.stringify(thumbnails || []) %>;
+                    const csrfToken = '<%= csrfToken %>';
+                    let rotationItemCount = 0;
+
+                    // -- Server Time --
+                    function updateRotationServerTime() {
+                        fetch('/api/server-time')
+                            .then(r => r.json())
+                            .then(data => {
+                                const el = document.getElementById('rotationServerTime');
+                                if (el && data.formattedTime) el.textContent = `Server: ${data.formattedTime}`;
+                            })
+                            .catch(e => console.error(e));
+                    }
+                    updateRotationServerTime();
+                    setInterval(updateRotationServerTime, 60000);
+
+                    // -- Duration --
+                    window.calculateDuration = function () {
+                        const start = document.getElementById('rotationStartTime').value;
+                        const end = document.getElementById('rotationEndTime').value;
+                        const badge = document.getElementById('rotationDurationBadge');
+
+                        if (!start || !end) {
+                            badge.textContent = 'Duration: 00:00';
+                            return;
+                        }
+
+                        const [h1, m1] = start.split(':').map(Number);
+                        const [h2, m2] = end.split(':').map(Number);
+                        let min1 = h1 * 60 + m1;
+                        let min2 = h2 * 60 + m2;
+
+                        if (min2 <= min1) min2 += 24 * 60;
+
+                        const diff = min2 - min1;
+                        const h = Math.floor(diff / 60);
+                        const m = diff % 60;
+
+                        badge.textContent = `Duration: ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                    }
+                    document.getElementById('rotationStartTime').addEventListener('change', calculateDuration);
+                    document.getElementById('rotationEndTime').addEventListener('change', calculateDuration);
+
+                    // -- Toast --
+                    function showToast(type, message) {
+                        const toast = document.getElementById('toast');
+                        const icon = document.getElementById('toast-icon');
+                        const msg = document.getElementById('toast-message');
+
+                        toast.className = 'fixed top-6 right-6 bg-dark-800 text-white px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center border border-gray-700 transform transition-all duration-300';
+
+                        if (type === 'success') {
+                            icon.className = 'ti ti-check text-green-500 mr-3 text-xl';
+                            toast.classList.add('border-green-500/50');
+                        } else {
+                            icon.className = 'ti ti-alert-triangle text-red-500 mr-3 text-xl';
+                            toast.classList.add('border-red-500/50');
+                        }
+
+                        msg.textContent = message;
+                        toast.classList.remove('hidden', 'translate-y-[-20px]', 'opacity-0');
+
+                        setTimeout(() => {
+                            toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                            setTimeout(() => toast.classList.add('hidden'), 300);
+                        }, 3000);
+                    }
+
+                    // -- Modal --
+                    window.openCreateRotationModal = function () {
+                        const modal = document.getElementById('createRotationModal');
+                        const modalContainer = modal.querySelector('.modal-container');
+                        document.getElementById('rotationModalTitle').innerHTML = '<i class="ti ti-rotate text-primary"></i> Create New Rotation';
+                        document.getElementById('rotationForm').reset();
+                        document.getElementById('rotationId').value = '';
+                        document.getElementById('rotationChannelId').value = '<%= channel.id %>'; // Ensure ID is persistent
+                        document.getElementById('rotationDurationBadge').textContent = 'Duration: 00:00';
+
+                        document.getElementById('rotationItemsContainer').innerHTML = '';
+                        rotationItemCount = 0;
+                        // Don't add default item if we're just about to fill it (like in edit)
+                        // But for "New", we want one.
+                        if (document.getElementById('rotationId').value === '') {
+                            addRotationItem();
+                        }
+
+                        document.body.style.overflow = 'hidden';
+                        modal.classList.remove('hidden');
+                        setTimeout(() => {
+                            if (modalContainer) modalContainer.classList.add('active');
+                        }, 10);
+                    }
+
+                    window.closeCreateRotationModal = function () {
+                        const modal = document.getElementById('createRotationModal');
+                        const modalContainer = modal.querySelector('.modal-container');
+                        if (modalContainer) modalContainer.classList.remove('active');
+                        setTimeout(() => {
+                            modal.classList.add('hidden');
+                            document.body.style.overflow = '';
+                        }, 300);
+                    }
+
+                    window.generateSmartRotation = function () {
+                        // Open configuration modal instead of direct confirm
+                        const modal = document.getElementById('smartConfigModal');
+                        const modalContainer = modal.querySelector('.modal-container');
+                        document.body.style.overflow = 'hidden';
+                        modal.classList.remove('hidden');
+                        setTimeout(() => {
+                            if (modalContainer) modalContainer.classList.add('active');
+                        }, 10);
+                    }
+
+                    window.closeSmartConfigModal = function () {
+                        const modal = document.getElementById('smartConfigModal');
+                        const modalContainer = modal.querySelector('.modal-container');
+                        if (modalContainer) modalContainer.classList.remove('active');
+                        setTimeout(() => {
+                            modal.classList.add('hidden');
+                            document.body.style.overflow = '';
+                        }, 300);
+                    }
+
+                    window.confirmSmartGeneration = async function () {
+                        const daysCount = parseInt(document.getElementById('smartDaysCount').value) || 14;
+                        const minDailyHours = parseInt(document.getElementById('smartMinDailyHours').value) || 5;
+                        const maxDailyHours = parseInt(document.getElementById('smartMaxDailyHours').value) || 10;
+                        const contentType = document.getElementById('smartContentType').value;
+                        const repeatMode = document.getElementById('smartRepeatMode').value;
+
+                        closeSmartConfigModal();
+
+                        const btn = document.getElementById('btnGenerateSmart');
+                        const originalHTML = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="ti ti-loader animate-spin"></i> Analyzing Heatmap...';
+
+                        try {
+                            const res = await fetch(`/api/channels/<%= channel.id %>/generate-smart-rotation`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-Token': csrfToken
+                                },
+                                body: JSON.stringify({
+                                    daysCount,
+                                    minDailyHours,
+                                    maxDailyHours,
+                                    contentType,
+                                    repeatMode
+                                })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                await window.showAlert(data.message);
+                                location.reload();
+                            } else {
+                                btn.disabled = false;
+                                btn.innerHTML = originalHTML;
+                                window.showAlert(data.error || "Gagal membuat jadwal cerdas Pipen.");
+                            }
+                        } catch (e) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalHTML;
+                            console.error(e);
+                            window.showAlert("Terjadi kesalahan: " + e.message);
+                        }
+                    }
+
+                    // -- Format Duration Helper --
+                    function formatDuration(seconds) {
+                        if (!seconds) return '';
+                        const h = Math.floor(seconds / 3600);
+                        const m = Math.floor((seconds % 3600) / 60);
+                        const s = Math.floor(seconds % 60);
+                        if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                        return `${m}:${s.toString().padStart(2, '0')}`;
+                    }
+
+                    // -- Rotation Items --
+                    let activeMediaIndex = null;
+                    let currentMediaTab = 'video'; // video | playlist
+
+                    window.addRotationItem = function () {
+                        rotationItemCount++;
+                        const idx = rotationItemCount;
+                        const container = document.getElementById('rotationItemsContainer');
+
+                        const html = `
+    <div class="rotation-item bg-dark-900/50 rounded-xl p-5 border border-gray-700 relative group" data-index="${idx}">
+       <!-- Remove Button -->
+       <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button type="button" onclick="this.closest('.rotation-item').remove()" class="text-gray-500 hover:text-red-500 p-1.5 rounded-lg hover:bg-dark-700">
+             <i class="ti ti-trash text-lg"></i>
+          </button>
+       </div>
+       
+       <div class="flex items-center gap-2 mb-4">
+          <span class="bg-primary/20 text-primary text-xs font-bold px-2 py-1 rounded">ITEM #${idx}</span>
+          <span class="text-xs text-gray-500 font-medium uppercase tracking-wider">Configuration</span>
+       </div>
+
+       <div class="space-y-6">
+          <!-- Title & Description Row -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                 <label class="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Display Title</label>
+                 <input type="text" name="items[${idx}][title]" class="w-full bg-dark-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white title-input focus:border-primary focus:ring-1 focus:ring-primary outline-none" required placeholder="Title override">
+              </div>
+              <div>
+                 <label class="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Description (Optional)</label>
+                 <textarea name="items[${idx}][description]" rows="1" class="w-full bg-dark-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none" placeholder="Optional override"></textarea>
+              </div>
+              <div class="md:col-span-2">
+                 <label class="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Tags (Optional)</label>
+                 <input type="text" name="items[${idx}][tags]" class="w-full bg-dark-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white tags-input focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="e.g. music, jazz, chill">
+              </div>
+          </div>
+
+          <!-- Video Selection Section -->
+          <div class="bg-dark-800/50 p-4 rounded-xl border border-gray-700/50">
+              <label class="block text-[10px] font-bold text-emerald-500 mb-2.5 uppercase">
+                <i class="ti ti-movie mr-1"></i> Content Selection
+              </label>
+              
+              <div class="flex gap-1 bg-dark-900 p-1 rounded-lg border border-gray-700 mb-4 w-fit">
+                  <button type="button" onclick="switchItemModeV3(${idx}, 'video')" id="tab-video-${idx}" class="px-4 py-1.5 text-xs font-bold rounded-md tab-active transition-all">SINGLE VIDEO</button>
+                  <button type="button" onclick="switchItemModeV3(${idx}, 'playlist')" id="tab-playlist-${idx}" class="px-4 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-300 transition-all">PLAYLIST</button>
+              </div>
+
+              <input type="hidden" name="items[${idx}][video_id]" class="video-id-input" required>
+              <input type="hidden" id="item-mode-${idx}" value="video">
+
+              <!-- Video Grid -->
+              <div id="video-grid-${idx}" class="grid grid-cols-4 gap-2.5 p-1 mb-2 max-h-[220px] overflow-y-auto custom-scrollbar">
+                  <!-- JS Populated -->
+              </div>
+
+              <!-- Playlist Select (Hidden by Default) -->
+              <div id="playlist-area-${idx}" class="hidden">
+                  <select onchange="selectPlaylistForItem(${idx}, this.value)" class="w-full bg-dark-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none">
+                      <option value="">Select a Playlist...</option>
+                      ${playlists.map(p => `<option value="${p.id}">${p.name} (${p.video_count} videos)</option>`).join('')}
+                  </select>
+              </div>
+          </div>
+
+          <!-- Thumbnail Selection Section -->
+          <div class="bg-dark-800/50 p-4 rounded-xl border border-gray-700/50">
+              <label class="block text-[10px] font-bold text-amber-500 mb-2.5 uppercase">
+                <i class="ti ti-photo mr-1"></i> Custom Thumbnail
+              </label>
+
+              <input type="hidden" name="items[${idx}][thumbnail_path]" class="thumbnail-path-input">
+              <input type="file" name="items[${idx}][thumbnail]" accept="image/*" class="thumbnail-input hidden">
+
+              <div id="thumbnail-grid-${idx}" class="grid grid-cols-4 gap-2.5 p-1 max-h-[160px] overflow-y-auto custom-scrollbar">
+                  <!-- JS Populated -->
+              </div>
+              
+              <div class="mt-2 flex items-center justify-between">
+                  <span class="text-[10px] text-gray-500 italic">* Empty selection uses video default</span>
+                  <div class="flex items-center gap-2">
+                       <div class="w-8 h-5 bg-dark-700 rounded border border-gray-600 overflow-hidden hidden" id="item-thumb-preview-wrap-${idx}">
+                            <img src="" id="item-thumb-preview-${idx}" class="w-full h-full object-cover">
+                       </div>
+                       <span class="text-[10px] text-gray-400" id="item-thumb-label-${idx}">Default</span>
+                  </div>
+              </div>
+          </div>
+       </div>
+    </div>
+  `;
+                        container.insertAdjacentHTML('beforeend', html);
+                        populateItemGridsV3(idx);
+                    }
+
+                    // -- V3 Grid Logic (Inline Selectors) --
+                    function populateItemGridsV3(idx) {
+                        populateVideoGridV3(idx);
+                        populateThumbnailGridV3(idx);
+                    }
+
+                    window.switchItemModeV3 = function (idx, mode) {
+                        const tabVideo = document.getElementById(`tab-video-${idx}`);
+                        const tabPlaylist = document.getElementById(`tab-playlist-${idx}`);
+                        const videoGrid = document.getElementById(`video-grid-${idx}`);
+                        const playlistArea = document.getElementById(`playlist-area-${idx}`);
+                        const modeInput = document.getElementById(`item-mode-${idx}`);
+
+                        modeInput.value = mode;
+
+                        if (mode === 'video') {
+                            tabVideo.classList.add('tab-active');
+                            tabVideo.classList.remove('text-gray-500');
+                            tabPlaylist.classList.remove('tab-active');
+                            tabPlaylist.classList.add('text-gray-500');
+                            videoGrid.classList.remove('hidden');
+                            playlistArea.classList.add('hidden');
+                        } else {
+                            tabPlaylist.classList.add('tab-active');
+                            tabPlaylist.classList.remove('text-gray-500');
+                            tabVideo.classList.remove('tab-active');
+                            tabVideo.classList.add('text-gray-500');
+                            videoGrid.classList.add('hidden');
+                            playlistArea.classList.remove('hidden');
+                        }
+                    }
+
+                    function populateVideoGridV3(idx) {
+                        const container = document.getElementById(`video-grid-${idx}`);
+                        if (!container) return;
+
+                        if (videos.length === 0) {
+                            container.innerHTML = `<div class="col-span-4 text-center py-4 text-gray-600 italic text-[10px]">No videos found</div>`;
+                            return;
+                        }
+
+                        let html = '';
+                        videos.forEach(v => {
+                            const rawThumb = v.thumbnail_path || v.thumbnail;
+                            const filename = rawThumb ? rawThumb.split(/[\\/]/).pop() : null;
+                            const thumb = filename ? `/uploads/thumbnails/${filename}` : '/images/default-video-thumbnail.svg';
+
+                            html += `
+                                <div class="relative aspect-video rounded-lg overflow-hidden border-2 border-transparent hover:border-emerald-500/50 cursor-pointer group v2-selectable-card video-card-${idx}" 
+                                     data-video-id="${v.id}"
+                                     onclick="selectVideoForItemV3(${idx}, '${v.id}', this, '${v.title.replace(/'/g, "\\'")}')">
+                                    <img src="${thumb}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/default-video-thumbnail.svg';">
+                                    <div class="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-colors"></div>
+                                    <div class="v2-check-marker hidden">
+                                        <div class="bg-emerald-500 text-white rounded-full p-0.5 shadow-lg">
+                                            <i class="ti ti-check text-[10px] font-bold"></i>
+                                        </div>
+                                    </div>
+                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-1">
+                                        <div class="text-[9px] text-white font-medium truncate px-1">${v.title}</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        container.innerHTML = html;
+                    }
+
+                    function populateThumbnailGridV3(idx) {
+                        const container = document.getElementById(`thumbnail-grid-${idx}`);
+                        if (!container) return;
+
+                        if (thumbnails.length === 0) {
+                            container.innerHTML = `<div class="col-span-4 text-center py-4 text-gray-600 italic text-[10px]">No thumbnails found</div>`;
+                            return;
+                        }
+
+                        let html = '';
+                        thumbnails.forEach(t => {
+                            const displayUrl = t.filepath.startsWith('/') ? t.filepath : `/uploads/thumbnails/${t.filepath.split('/').pop()}`;
+                            html += `
+                                <div class="relative aspect-video rounded-lg overflow-hidden border-2 border-transparent hover:border-amber-500/50 cursor-pointer group v2-selectable-card thumb-card-${idx}" 
+                                     data-path="${t.filepath}"
+                                     onclick="selectThumbnailForItemV3(${idx}, '${t.filepath.replace(/'/g, "\\'")}', this)">
+                                    <img src="${displayUrl}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/default-video-thumbnail.svg';">
+                                    <div class="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-colors"></div>
+                                    <div class="v2-check-marker hidden">
+                                        <div class="bg-amber-500 text-white rounded-full p-0.5 shadow-lg">
+                                            <i class="ti ti-check text-[10px] font-bold"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        container.innerHTML = html;
+                    }
+
+                    window.selectVideoForItemV3 = function (idx, videoId, element, title) {
+                        const wrapper = document.querySelector(`.rotation-item[data-index="${idx}"]`);
+                        wrapper.querySelector('.video-id-input').value = videoId;
+                        wrapper.querySelector('.title-input').value = title;
+
+                        // UI Feedback
+                        wrapper.querySelectorAll(`.video-card-${idx}`).forEach(card => {
+                            card.classList.remove('item-selected');
+                            card.querySelector('.v2-check-marker').classList.add('hidden');
+                        });
+                        element.classList.add('item-selected');
+                        element.querySelector('.v2-check-marker').classList.remove('hidden');
+                    }
+
+                    window.selectPlaylistForItem = function (idx, playlistId) {
+                        const wrapper = document.querySelector(`.rotation-item[data-index="${idx}"]`);
+                        const found = playlists.find(p => String(p.id) === String(playlistId));
+
+                        if (found) {
+                            wrapper.querySelector('.video-id-input').value = `playlist:${playlistId}`;
+                            wrapper.querySelector('.title-input').value = found.name;
+                        } else {
+                            wrapper.querySelector('.video-id-input').value = '';
+                        }
+                    }
+
+                    window.selectThumbnailForItemV3 = function (idx, path, element) {
+                        const wrapper = document.querySelector(`.rotation-item[data-index="${idx}"]`);
+                        wrapper.querySelector('.thumbnail-path-input').value = path;
+
+                        // UI Feedback
+                        wrapper.querySelectorAll(`.thumb-card-${idx}`).forEach(card => {
+                            card.classList.remove('item-selected');
+                            card.querySelector('.v2-check-marker').classList.add('hidden');
+                        });
+                        element.classList.add('item-selected');
+                        element.querySelector('.v2-check-marker').classList.remove('hidden');
+
+                        // Preview
+                        const previewImg = document.getElementById(`item-thumb-preview-${idx}`);
+                        const previewWrap = document.getElementById(`item-thumb-preview-wrap-${idx}`);
+                        const label = document.getElementById(`item-thumb-label-${idx}`);
+
+                        const displayUrl = path.startsWith('/') ? path : `/uploads/thumbnails/${path.split('/').pop()}`;
+                        previewImg.src = displayUrl;
+                        previewWrap.classList.remove('hidden');
+                        label.textContent = "Custom";
+                    }
+
+
+                    // -- Save Logic --
+                    window.saveRotation = async function () {
+                        const form = document.getElementById('rotationForm');
+                        const items = [];
+                        const rotationId = document.getElementById('rotationId').value;
+
+                        // Collect Data
+                        document.querySelectorAll('.rotation-item').forEach(el => {
+                            const idx = el.dataset.index;
+                            items.push({
+                                video_id: el.querySelector('.video-id-input').value,
+                                title: el.querySelector('.title-input').value,
+                                description: el.querySelector('textarea').value,
+                                tags: el.querySelector('.tags-input').value,
+                                privacy: document.getElementById('globalPrivacy').value,
+                                category: document.getElementById('globalCategory').value,
+                                thumbnail_path: el.querySelector('.thumbnail-path-input').value,
+                                original_thumbnail_path: el.dataset.originalThumbnail || null
+                            });
+                        });
+
+                        // Validation
+                        if (!document.getElementById('rotationName').value) return showToast('error', 'Rotation Name is required');
+                        if (items.length === 0) return showToast('error', 'Add at least one item');
+
+                        let valid = true;
+                        items.forEach((item, i) => {
+                            if (!item.video_id) { valid = false; showToast('error', `Item #${i + 1}: Select content`); }
+                            if (!item.title) { valid = false; showToast('error', `Item #${i + 1}: Title required`); }
+                        });
+                        if (!valid) return;
+
+                        // Build FormData
+                        const fd = new FormData();
+                        fd.append('name', document.getElementById('rotationName').value);
+                        fd.append('repeat_mode', document.getElementById('repeatMode').value);
+                        fd.append('youtube_channel_id', document.getElementById('rotationChannelId').value);
+
+                        // Date Construction
+                        const dateStr = new Date().toISOString().split('T')[0];
+                        fd.append('start_time', dateStr + 'T' + document.getElementById('rotationStartTime').value + ':00');
+                        fd.append('end_time', dateStr + 'T' + document.getElementById('rotationEndTime').value + ':00');
+
+
+                        const finalItems = [];
+                        document.querySelectorAll('.rotation-item').forEach(el => {
+                            const fileInput = el.querySelector('.thumbnail-input');
+
+                            finalItems.push({
+                                video_id: el.querySelector('.video-id-input').value,
+                                title: el.querySelector('.title-input').value,
+                                description: el.querySelector('textarea').value,
+                                tags: el.querySelector('.tags-input').value,
+                                privacy: document.getElementById('globalPrivacy').value,
+                                category: document.getElementById('globalCategory').value,
+                                thumbnail_path: el.querySelector('.thumbnail-path-input').value || null,
+                                original_thumbnail_path: el.dataset.originalThumbnail || null
+                            });
+
+                            // Always append something to thumbnails array to keep index sync
+                            if (fileInput.files[0]) {
+                                fd.append('thumbnails', fileInput.files[0]);
+                            } else {
+                                // Use empty.jpg instead of empty.txt to satisfy Multer image validation
+                                fd.append('thumbnails', new File([], 'empty.jpg', { type: 'image/jpeg' }));
+                            }
+                        });
+
+
+                        fd.append('items', JSON.stringify(finalItems));
+
+                        // Send
+                        const url = rotationId ? `/api/rotations/${rotationId}` : '/api/rotations';
+                        const method = rotationId ? 'PUT' : 'POST';
+
+                        try {
+                            const res = await fetch(url, {
+                                method: method,
+                                headers: { 'X-CSRF-Token': csrfToken },
+                                body: fd
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                showToast('success', 'Saved Successfully');
+                                setTimeout(() => window.location.reload(), 1000);
+                            } else {
+                                showToast('error', data.error || 'Save failed');
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            showToast('error', 'Network error');
+                        }
+                    }
+
+                    // -- Edit / Delete / Actoins --
+                    window.editRotation = async function (id) {
+                        try {
+                            const res = await fetch(`/api/rotations/${id}`);
+                            const data = await res.json();
+                            if (data.success) {
+                                const r = data.rotation;
+                                openCreateRotationModal();
+                                document.getElementById('rotationModalTitle').innerHTML = '<i class="ti ti-edit text-blue-400"></i> Edit Rotation';
+                                document.getElementById('rotationId').value = r.id;
+                                document.getElementById('rotationName').value = r.name;
+                                document.getElementById('repeatMode').value = r.repeat_mode;
+
+                                // Time
+                                const formatT = (d) => {
+                                    if (!d) return "";
+                                    let date = new Date(d);
+                                    if (isNaN(date.getTime())) return "";
+                                    return String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+                                };
+                                document.getElementById('rotationStartTime').value = formatT(r.start_time);
+                                document.getElementById('rotationEndTime').value = formatT(r.end_time);
+                                if (typeof calculateDuration === 'function') calculateDuration();
+
+                                // Items
+                                document.getElementById('rotationItemsContainer').innerHTML = '';
+                                rotationItemCount = 0;
+
+                                if (Array.isArray(r.items)) {
+                                    r.items.forEach(item => {
+                                        try {
+                                            addRotationItem();
+                                            const idx = rotationItemCount;
+                                            const el = document.getElementById('rotationItemsContainer').lastElementChild;
+
+                                            if (item.title) el.querySelector('.title-input').value = item.title;
+                                            if (item.description) el.querySelector('textarea').value = item.description;
+                                            if (item.tags) el.querySelector('.tags-input').value = item.tags;
+
+                                            // Content Selection
+                                            const vId = String(item.video_id || "");
+                                            if (vId.startsWith('playlist:')) {
+                                                const pid = vId.split(':')[1];
+                                                switchItemModeV3(idx, 'playlist');
+                                                const select = el.querySelector('select');
+                                                if (select) select.value = pid;
+                                                selectPlaylistForItem(idx, pid);
+                                            } else if (vId) {
+                                                switchItemModeV3(idx, 'video');
+                                                const card = el.querySelector(`.video-card-${idx}[data-video-id="${vId}"]`);
+                                                if (card) {
+                                                    selectVideoForItemV3(idx, vId, card, item.title);
+                                                } else {
+                                                    el.querySelector('.video-id-input').value = vId;
+                                                }
+                                            }
+
+                                            // Thumbnail
+                                            if (item.thumbnail_path) {
+                                                const tPath = item.thumbnail_path;
+                                                const tCard = el.querySelector(`.thumb-card-${idx}[data-path="${tPath}"]`);
+                                                if (tCard) {
+                                                    selectThumbnailForItemV3(idx, tPath, tCard);
+                                                } else {
+                                                    el.querySelector('.thumbnail-path-input').value = tPath;
+                                                    el.dataset.originalThumbnail = tPath;
+                                                    const previewImg = document.getElementById(`item-thumb-preview-${idx}`);
+                                                    const previewWrap = document.getElementById(`item-thumb-preview-wrap-${idx}`);
+                                                    const label = document.getElementById(`item-thumb-label-${idx}`);
+                                                    if (previewImg && previewWrap && label) {
+                                                        const filename = tPath.split(/[\\/]/).pop();
+                                                        previewImg.src = `/uploads/thumbnails/${filename}`;
+                                                        previewWrap.classList.remove('hidden');
+                                                        label.textContent = "Saved";
+                                                    }
+                                                }
+                                            }
+                                        } catch (err) {
+                                            console.error('Error populating item:', err);
+                                        }
+                                    });
+                                }
+
+                            }
+                        } catch (e) { console.error(e); showToast('error', 'Failed to load'); }
+                    }
+
+                    window.deleteRotation = async function (id) {
+                        if (!(await showConfirm('Delete this rotation?'))) return;
+                        await fetch(`/api/rotations/${id}`, { method: 'DELETE', headers: { 'X-CSRF-Token': csrfToken } });
+                        window.location.reload();
+                    }
+
+                    window.activateRotation = async function (id) {
+                        await fetch(`/api/rotations/${id}/activate`, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
+                        window.location.reload();
+                    }
+
+                    window.stopRotation = async function (id) {
+                        await fetch(`/api/rotations/${id}/stop`, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
+                        window.location.reload();
+                    }
+
+                    // Auto-open modal if requested via URL
+                    window.addEventListener('DOMContentLoaded', () => {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (urlParams.get('action') === 'create') {
+                            // Clean URL
+                            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                            window.history.replaceState({ path: newUrl }, '', newUrl);
+
+                            // Open Modal
+                            if (typeof openCreateRotationModal === 'function') {
+                                openCreateRotationModal();
+                            }
+                        }
+                    });
+                </script>

@@ -1,0 +1,92 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+data/
+
+# Uploads & Media
+public/uploads/
+temp/
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Build & Distribution
+dist/
+build/
+*.tgz
+
+# Debug & Test Scripts (generated during development)
+activate_rotation.js
+activate_test_rotation.js
+add_thumbnail_display.js
+backfill_duration.js
+check_*.js
+clean_and_setup.js
+clean_gallery.js
+cleanup_*.js
+create_test_*.js
+debug_*.js
+find_epic_channel.js
+find_slug.js
+find_test_video.js
+fix_*.js
+generate_playlists_epic.js
+generate_smart_rotation.js
+get_active_stream_info.js
+migrate_slugs.js
+patch_*.js
+reset_*.js
+reset-password.js
+setup_*.js
+test_*.js
+verify_*.js
+
+# Backup & Old Files
+streamflow-ori/
+*.backup
+*.bak
+*.old
+
+# Cookies & Session
+cookies.txt
+
+# PM2
+.pm2/
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Docker (optional - remove if you want to keep)
+# Dockerfile
+# docker-compose.yml
+# .dockerignore
