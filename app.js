@@ -817,6 +817,141 @@ app.get('/dashboard/:channelId', isAuthenticated, async (req, res) => {
 
 
 
+// Rotations Route
+app.get('/rotations', isAuthenticated, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    const rotations = await Rotation.findAll(req.session.userId);
+    const videos = await Video.findAll(req.session.userId);
+    // Filter valid videos like in dashboard
+    const validVideos = videos.filter(v =>
+      !(v.filepath.includes('/audio/') || v.format === 'mp3' || v.format === 'aac') &&
+      v.format !== 'youtube' &&
+      v.file_size > 0
+    );
+    const playlists = await Playlist.findAll(req.session.userId);
+
+    res.render('rotations', {
+      title: 'Stream Rotations',
+      active: 'rotations',
+      user: user,
+      rotations: rotations,
+      videos: validVideos,
+      playlists: playlists
+    });
+  } catch (error) {
+    console.error('Rotations page error:', error);
+    res.redirect('/dashboard');
+  }
+});
+
+// Gallery Route
+app.get('/gallery', isAuthenticated, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    const videos = await Video.findAll(req.session.userId);
+    // Filter out audio and youtube imports for main gallery
+    const validVideos = videos.filter(v =>
+      !(v.filepath.includes('/audio/') || v.format === 'mp3' || v.format === 'aac') &&
+      v.format !== 'youtube'
+    );
+
+    res.render('gallery', {
+      title: 'Video Gallery',
+      active: 'gallery',
+      user: user,
+      files: validVideos,
+      mediaType: 'video'
+    });
+  } catch (error) {
+    console.error('Gallery page error:', error);
+    res.redirect('/dashboard');
+  }
+});
+
+// Playlist Route
+app.get('/playlist', isAuthenticated, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    const playlists = await Playlist.findAll(req.session.userId);
+    const allFiles = await Video.findAll(req.session.userId);
+    const videos = allFiles.filter(v =>
+      !(v.filepath.includes('/audio/') || v.format === 'mp3' || v.format === 'aac') &&
+      v.format !== 'youtube'
+    );
+    const audios = allFiles.filter(v => (v.filepath.includes('/audio/') || v.format === 'mp3' || v.format === 'aac'));
+
+    res.render('playlist', {
+      title: 'Playlist Manager',
+      active: 'playlist',
+      user: user,
+      playlists: playlists,
+      videos: videos,
+      audios: audios
+    });
+  } catch (error) {
+    console.error('Playlist page error:', error);
+    res.redirect('/dashboard');
+  }
+});
+
+// History Route
+app.get('/history', isAuthenticated, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    // Fetch recent streams
+    const streamsData = await Stream.findAllPaginated(req.session.userId, { limit: 50 });
+
+    res.render('history', {
+      title: 'Stream History',
+      active: 'history',
+      user: user,
+      streams: streamsData.streams
+    });
+  } catch (error) {
+    console.error('History page error:', error);
+    res.redirect('/dashboard');
+  }
+});
+
+// Users Route (Admin)
+app.get('/users', isAuthenticated, isAdmin, async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.session.userId);
+    const users = await User.findAll();
+
+    res.render('users', {
+      title: 'User Management',
+      active: 'users',
+      user: currentUser,
+      users: users
+    });
+  } catch (error) {
+    console.error('Users page error:', error);
+    res.redirect('/dashboard');
+  }
+});
+
+// Settings Route
+app.get('/settings', isAuthenticated, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId);
+    res.render('settings', {
+      title: 'Settings',
+      active: 'settings',
+      user: user,
+      activeTab: req.query.activeTab || 'profile',
+      error: req.query.error,
+      success: req.query.success
+    });
+  } catch (error) {
+    console.error('Settings page error:', error);
+    res.redirect('/dashboard');
+  }
+});
+
+
+
 
 
 // Helper for channel gallery routes
