@@ -2798,6 +2798,7 @@ app.post('/api/settings/recaptcha/toggle', isAuthenticated, async (req, res) => 
   }
 });
 
+
 app.delete('/api/settings/recaptcha', isAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId);
@@ -2823,6 +2824,36 @@ app.delete('/api/settings/recaptcha', isAuthenticated, async (req, res) => {
     });
   }
 });
+
+app.post('/api/settings/youtube-credentials', isAuthenticated, async (req, res) => {
+  try {
+    const { clientId, clientSecret } = req.body;
+
+    if (!clientId) {
+      return res.status(400).json({ success: false, error: 'Client ID is required' });
+    }
+
+    // Only update secret if provided and not masked
+    const updateData = { youtube_client_id: clientId };
+    if (clientSecret && clientSecret !== '••••••••••••••••') {
+      updateData.youtube_client_secret = encrypt(clientSecret);
+    }
+
+    await User.update(req.session.userId, updateData);
+
+    res.json({
+      success: true,
+      message: 'YouTube credentials saved successfully'
+    });
+  } catch (error) {
+    console.error('Error saving YouTube credentials:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save YouTube credentials'
+    });
+  }
+});
+
 
 app.get('/api/settings/youtube-channels', isAuthenticated, async (req, res) => {
   try {
