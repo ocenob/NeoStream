@@ -1,6 +1,6 @@
-# Changelog StraminGo
+# Changelog NeoStream
 
-Semua perubahan penting pada StraminGo akan didokumentasikan di file ini.
+Semua perubahan penting pada NeoStream akan didokumentasikan di file ini.
 
 ---
 

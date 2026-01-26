@@ -1,7 +1,7 @@
 {
-  "name": "stramingo",
+  "name": "neostream",
   "version": "2.2.0",
-  "description": "StraminGo - YouTube Live Streaming Manager with FFmpeg",
+  "description": "NeoStream - YouTube Live Streaming Manager with FFmpeg",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",

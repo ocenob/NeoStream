@@ -3,7 +3,7 @@
 set -e
 
 echo "================================"
-echo "   StreamFlow Quick Installer  "
+echo "   NeoStream Quick Installer  "
 echo "================================"
 echo
 
@@ -70,7 +70,7 @@ else
     sudo npm install -g pm2
 fi
 
-echo "▶️ Starting StreamFlow..."
+echo "▶️ Starting NeoStream..."
 pm2 start app.js --name streamflow
 pm2 save
 

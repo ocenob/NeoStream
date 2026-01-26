@@ -1,6 +1,6 @@
-# Contributing to StraminGo
+# Contributing to NeoStream
 
-Terima kasih sudah tertarik untuk berkontribusi ke projek StraminGo
+Terima kasih sudah tertarik untuk berkontribusi ke projek NeoStream
 
 ## Cara Berkontribusi
 

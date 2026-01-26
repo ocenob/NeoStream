@@ -2,17 +2,17 @@
 
 ![logo](https://github.com/user-attachments/assets/83d95886-2fbb-45c7-986a-e6c4d053bc55)
 
-## StraminGo: Web-Based Multi-Platform Streaming
+## NeoStream: Web-Based Multi-Platform Streaming
 
-[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/bangtutorial/stramingo/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/bangtutorial/stramingo/blob/main/LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/bangtutorial/stramingo/blob/main/CONTRIBUTING.md)
-[![GitHub Stars](https://img.shields.io/github/stars/bangtutorial/stramingo?style=social)](https://github.com/bangtutorial/stramingo/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/bangtutorial/stramingo?style=social)](https://github.com/bangtutorial/stramingo/network/members)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/bangtutorial/neostream/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/bangtutorial/neostream/blob/main/LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/bangtutorial/neostream/blob/main/CONTRIBUTING.md)
+[![GitHub Stars](https://img.shields.io/github/stars/bangtutorial/neostream?style=social)](https://github.com/bangtutorial/neostream/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/bangtutorial/neostream?style=social)](https://github.com/bangtutorial/neostream/network/members)
 
-**StraminGo** adalah platform live streaming berbasis web yang powerful dan mudah digunakan. Streaming ke YouTube, Facebook, dan platform RTMP lainnya secara bersamaan dengan satu aplikasi. Dilengkapi dengan video management, scheduled streaming, dan real-time monitoring untuk pengalaman streaming yang profesional.
+**NeoStream** adalah platform live streaming berbasis web yang powerful dan mudah digunakan. Streaming ke YouTube, Facebook, dan platform RTMP lainnya secara bersamaan dengan satu aplikasi. Dilengkapi dengan video management, scheduled streaming, dan real-time monitoring untuk pengalaman streaming yang profesional.
 
-[🚀 Installation](#-quick-installation) • [📖 Documentation](#-manual-installation) • [🐳 Docker](#-docker-deployment) • [🪛 Troubleshooting](#-troubleshooting) • [💬 Community](https://github.com/bangtutorial/stramingo/discussions)
+[🚀 Installation](#-quick-installation) • [📖 Documentation](#-manual-installation) • [🐳 Docker](#-docker-deployment) • [🪛 Troubleshooting](#-troubleshooting) • [💬 Community](https://github.com/bangtutorial/neostream/discussions)
 
 ![screenshot](https://github.com/user-attachments/assets/fef1c0a5-04f6-41ae-8ea1-5eb1fff13a22)
 
@@ -46,7 +46,7 @@
 Untuk instalasi otomatis, jalankan perintah berikut:
 
 ```bash
-curl -o install.sh https://raw.githubusercontent.com/bangtutorial/stramingo/main/install.sh && chmod +x install.sh && ./install.sh
+curl -o install.sh https://raw.githubusercontent.com/bangtutorial/neostream/main/install.sh && chmod +x install.sh && ./install.sh
 ```
 
 ## 🔧 Manual Installation
@@ -85,16 +85,16 @@ Install Git:
 sudo apt install git -y
 ```
 
-### 2. Setup Project StraminGo
+### 2. Setup Project NeoStream
 
 Clone repository:
 ```bash
-git clone https://github.com/bangtutorial/stramingo
+git clone https://github.com/bangtutorial/neostream
 ```
 
 Masuk ke direktori project:
 ```bash
-cd stramingo
+cd neostream
 ```
 
 Install Paket Node.JS:
@@ -159,7 +159,7 @@ sudo npm install -g pm2
 
 Jalankan aplikasi dengan PM2:
 ```bash
-pm2 start app.js --name stramingo
+pm2 start app.js --name neostream
 ```
 
 **Setup Auto-Restart saat Server Reboot:**
@@ -183,13 +183,13 @@ pm2 save
 pm2 status
 
 # Restart aplikasi
-pm2 restart stramingo
+pm2 restart neostream
 
 # Stop aplikasi
-pm2 stop stramingo
+pm2 stop neostream
 
 # Lihat logs aplikasi
-pm2 logs stramingo
+pm2 logs neostream
 
 # Monitor resource usage
 pm2 monit
@@ -208,7 +208,7 @@ Contoh: `http://88.12.34.56:7575`
 Jika lupa password atau perlu reset akun:
 
 ```bash
-cd stramingo && node reset-password.js
+cd neostream && node reset-password.js
 ```
 
 ## ⏰ Pengaturan Timezone Server
@@ -232,7 +232,7 @@ sudo timedatectl set-timezone Asia/Jakarta
 
 ### Restart aplikasi setelah mengubah timezone:
 ```bash
-pm2 restart stramingo
+pm2 restart neostream
 ```
 
 ## 🐳 Docker Deployment
@@ -289,7 +289,7 @@ sudo kill -9 <PID>
 rm db/*.db
 
 # Restart aplikasi untuk membuat database baru
-pm2 restart stramingo
+pm2 restart neostream
 ```
 
 ### Docker Troubleshooting
@@ -308,11 +308,11 @@ pm2 restart stramingo
 
 ## 💫 Contributors
 
-[![Contributors](https://contrib.rocks/image?repo=bangtutorial/stramingo)](https://github.com/bangtutorial/stramingo/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=bangtutorial/neostream)](https://github.com/bangtutorial/neostream/graphs/contributors)
 
 ## 📄 License
 
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/bangtutorial/stramingo/blob/main/LICENSE)
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/bangtutorial/neostream/blob/main/LICENSE)
 
 ---
 © 2026 - [Bang Tutorial](https://youtube.com/bangtutorial)
