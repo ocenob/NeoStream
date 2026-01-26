@@ -1,6 +1,6 @@
-// Dashboard.js v2.7 - Auto-Fill & Stream Key Fix
-console.log('%c🚀 Dashboard.js v2.7 LOADED', 'background: #22c55e; color: white; padding: 8px; font-weight: bold; font-size: 14px;');
-console.log('%c⚠️ If you see version < 2.7, CLEAR YOUR CACHE!', 'background: #f59e0b; color: white; padding: 4px;');
+// Dashboard.js v2.8 - Fixed Channel Buttons (Dashboard \u0026 Delete)
+console.log('%c🚀 Dashboard.js v2.8 LOADED - BUTTONS FIXED', 'background: #22c55e; color: white; padding: 8px; font-weight: bold; font-size: 14px;');
+console.log('%c⚠️ If buttons still not working, press Ctrl+Shift+R to hard refresh!', 'background: #f59e0b; color: white; padding: 4px;');
 
 // --- Stats Polling ---
 async function updateSystemStats() {

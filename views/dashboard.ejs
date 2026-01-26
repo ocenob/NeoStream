@@ -209,16 +209,17 @@
                   class="py-1.5 bg-[#1a2e21] hover:bg-emerald-600 hover:text-white hover:shadow-lg hover:shadow-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold transition-all border border-emerald-900/30 text-center">
                   Dashboard
                 </a>
-                <button onclick="syncChannelV2('<%= channel.id %>', event)"
+                <button type="button" onclick="syncChannelV2('<%= channel.id %>', event)"
                   class="py-1.5 bg-[#132322] hover:bg-teal-600 hover:text-white hover:shadow-lg hover:shadow-teal-500/20 text-teal-400 rounded-lg text-xs font-bold transition-all border border-teal-900/30">
                   Sync
                 </button>
-                <button
+                <button type="button"
                   onclick="editChannelV2('<%= channel.id %>', '<%= channel.channel_name %>', '<%= channel.slug %>', '<%= channel.description %>', '<%= channel.channel_color %>')"
                   class="py-1.5 bg-[#252529] hover:bg-gray-600 hover:text-white hover:shadow-lg hover:shadow-gray-500/20 text-gray-300 rounded-lg text-xs font-bold transition-all border border-gray-700/30">
                   Edit
                 </button>
-                <button onclick="confirmDeleteChannelV2('<%= channel.id %>', '<%= channel.channel_name %>')"
+                <button type="button"
+                  onclick="confirmDeleteChannelV2('<%= channel.id %>', '<%= channel.channel_name %>')"
                   class="py-1.5 bg-[#2a1b1b] hover:bg-red-600 hover:text-white hover:shadow-lg hover:shadow-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all border border-red-900/30">
                   Hapus
                 </button>
@@ -421,4 +422,4 @@
 
   </div>
 
-  <script src="/js/dashboard.js?v=2.1"></script>
+  <script src="/js/dashboard.js?v=2.8"></script>

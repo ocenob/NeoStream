@@ -366,14 +366,18 @@ app.post('/login', loginDelayMiddleware, loginLimiter, async (req, res) => {
     }
 
     const user = await User.findByUsername(username);
+    console.log('[DEBUG] Login attempt for username:', username);
     if (!user) {
+      console.log('[DEBUG] User not found');
       return res.render('login', {
         title: 'Login',
         error: 'Invalid username or password',
         recaptchaSiteKey: recaptchaSettings.hasKeys && recaptchaSettings.enabled ? recaptchaSettings.siteKey : null
       });
     }
+    console.log('[DEBUG] User found, verifying password...');
     const passwordMatch = await User.verifyPassword(password, user.password);
+    console.log('[DEBUG] Password match result:', passwordMatch);
     if (!passwordMatch) {
       return res.render('login', {
         title: 'Login',
@@ -771,7 +775,7 @@ app.get('/dashboard/:channelId', isAuthenticated, async (req, res) => {
     }
 
     if (!channel || channel.user_id !== user.id) {
-      return res.redirect('/dashboard');
+      return res.redirect('/dashboard?error=ChannelNotFound');
     }
 
     const streamsData = await Stream.findAllPaginated(req.session.userId, {
@@ -1231,6 +1235,7 @@ app.post('/api/thumbnails/upload', isAuthenticated, uploadThumbnail.single('medi
       youtube_channel_id: channelId,
       filepath: `/uploads/thumbnails/${thumbFilename}`,
       filename: thumbFilename,
+      title: path.parse(req.file.originalname).name,
       original_filename: req.file.originalname,
       file_size: req.file.size,
       width: 0, height: 0 // Placeholder

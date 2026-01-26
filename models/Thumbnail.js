@@ -9,11 +9,11 @@ class Thumbnail {
             const id = uuidv4();
             db.run(
                 `INSERT INTO thumbnails (
-          id, filename, filepath, user_id, youtube_channel_id, 
+          id, title, filename, filepath, user_id, youtube_channel_id, 
           file_size, width, height
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
-                    id, data.filename, data.filepath, data.user_id, data.youtube_channel_id,
+                    id, data.title || data.filename, data.filename, data.filepath, data.user_id, data.youtube_channel_id,
                     data.file_size, data.width, data.height
                 ],
                 function (err) {
