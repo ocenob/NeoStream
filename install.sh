@@ -46,9 +46,20 @@ else
     sudo apt install git -y
 fi
 
-echo "📥 Clone repository..."
-git clone https://github.com/bangtutorial/streamflow
-cd streamflow
+# Cek apakah script dijalankan di dalam folder project (sudah di-clone)
+if [ -f "package.json" ]; then
+    echo "📂 Terdeteksi dijalankan di dalam folder project, melewati proses clone..."
+else
+    echo "📥 Clone repository..."
+    if [ -d "neostream" ]; then
+        echo "⚠️ Folder neostream sudah ada, masuk ke folder..."
+        cd neostream
+    else
+        # URL akan di-override jika user melakukan clone manual
+        git clone https://github.com/ocenob/neostream.git neostream
+        cd neostream
+    fi
+fi
 
 echo "⚙️ Installing dependencies..."
 npm install
@@ -71,7 +82,7 @@ else
 fi
 
 echo "▶️ Starting NeoStream..."
-pm2 start app.js --name streamflow
+pm2 start app.js --name neostream
 pm2 save
 
 echo

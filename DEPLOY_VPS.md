@@ -41,11 +41,20 @@ Jika belum ada git:
 sudo apt install -y git
 ```
 
-Clone repository GitHub Anda (ganti URL dengan repo Anda):
+Clone repository GitHub Anda.
+**Jika Repository Private**, gunakan format token:
 ```bash
-# Contoh
-git clone https://github.com/USERNAME/REPO-NAME.git streamflow
-cd streamflow
+git clone https://TOKEN_GITHUB_ANDA@github.com/USERNAME/neostream.git neostream
+```
+
+**Jika Repository Public**:
+```bash
+git clone https://github.com/USERNAME/neostream.git neostream
+```
+
+Masuk ke folder project:
+```bash
+cd neostream
 ```
 
 ## 5. Instalasi Dependency Aplikasi
@@ -66,7 +75,7 @@ nano .env
 ```
 **PENTING**:
 - Sesuaikan `BASE_URL` dengan IP VPS atau Domain Anda (misal `http://123.456.78.90:7575`).
-- Isi kredensial database (biarkan default `data/streamflow.db` jika pakai SQLite).
+- Isi kredensial database (biarkan default `data/neostream.db` jika pakai SQLite).
 - Pastikan folder database dibuat otomatis oleh aplikasi, atau buat manual: `mkdir data`.
 
 ## 7. Menjalankan Aplikasi dengan PM2 (Production)
@@ -79,13 +88,13 @@ sudo npm install -g pm2
 
 Jalankan aplikasi (pastikan di folder project):
 ```bash
-pm2 start app.js --name "streamflow"
+pm2 start app.js --name "neostream"
 ```
 
 Cek status:
 ```bash
 pm2 status
-pm2 logs streamflow
+pm2 logs neostream
 ```
 
 Simpan konfigurasi agar auto-start saat reboot:
