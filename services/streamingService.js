@@ -66,7 +66,7 @@ function getVideoEncoderArgs(resolution = '1280x720', bitrate = '2500k', fps = 3
   if (encoder === 'h264_nvenc') {
     args.push(
       '-c:v', 'h264_nvenc',
-      '-preset', 'p4', // Medium preset for NVENC
+      '-preset', 'medium', // Medium preset for NVENC (compatible)
       '-rc', 'cbr',
       '-b:v', bitrate,
       '-maxrate', bitrate,
