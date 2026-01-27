@@ -258,7 +258,7 @@
                                                     , minute: '2-digit' , hour12: false}) %></span>
                                         </div>
                                         <% } else { %>
-                                            <span class="text-sm text-gray-500">â€”</span>
+                                            <span class="text-sm text-gray-500">—</span>
                                             <% } %>
                                 </td>
                                 <td class="px-6 py-4">
@@ -307,7 +307,7 @@
                                             </span>
                                         </div>
                                         <% } else { %>
-                                            <span class="text-gray-600 text-sm">â€”</span>
+                                            <span class="text-gray-600 text-sm">—</span>
                                             <% } %>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
@@ -610,9 +610,9 @@
 
                 <script>
                     // Safe Data Initialization
-                    const videos = <% - JSON.stringify(videos || []).replace(/</g, '\\u003c') %>;
-                    const playlists = <% - JSON.stringify(playlists || []).replace(/</g, '\\u003c') %>;
-                    const thumbnails = <% - JSON.stringify(thumbnails || []).replace(/</g, '\\u003c') %>;
+                    const videos = <%- JSON.stringify(videos || []).replace(/</g, '\\u003c') %>;
+                    const playlists = <%- JSON.stringify(playlists || []).replace(/</g, '\\u003c') %>;
+                    const thumbnails = <%- JSON.stringify(thumbnails || []).replace(/</g, '\\u003c') %>;
                     const csrfToken = '<%= csrfToken %>';
                     let rotationItemCount = 0;
 
