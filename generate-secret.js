@@ -18,7 +18,7 @@ if (fs.existsSync(envPath)) {
 } else {
     // Create basic .env content if neither exists
     console.log('.env not found, creating new one...');
-    envContent = 'PORT=7575\nNODE_ENV=production\nDB_PATH=./data/neostream.db\nBASE_URL=http://localhost:7575\n';
+    envContent = 'PORT=7575\nNODE_ENV=development\nDB_PATH=./data/neostream.db\nBASE_URL=http://localhost:7575\n';
 }
 
 const secret = generateSecret();
