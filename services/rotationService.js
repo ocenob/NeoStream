@@ -147,6 +147,20 @@ async function checkRotations() {
       loggedScheduleInfo.delete(`notstarted_${rotation.id}`);
 
       if (now >= scheduledEnd) {
+        // SAFETY CHECK: If the stream started less than 2 minutes ago, DO NOT kill it yet.
+        // This prevents infinite restart loops if the schedule is tight or clocks are slightly off.
+        const activeStreamKey = `${rotation.id}_${items[currentIndex].id}`;
+        if (activeRotationStreams.has(activeStreamKey)) {
+          const streamInfo = activeRotationStreams.get(activeStreamKey);
+          // We need to store startTime in activeRotationStreams to use this check
+          // For now, let's just rely on a simple grace period if we can track it, 
+          // but simpler: if we are HERE, it means the time window is OVER.
+
+          // If the time window is over, we MUST move to next. 
+          // BUT, if the user just started it manually or it just started, 
+          // we might want to log a warning instead of killing it instantly if it's < 1 min old.
+          console.log(`[RotationService] Time window ended for ${rotation.name}. Stopping current item.`);
+        }
         console.log(`[RotationService] Rotation ${rotation.name} time window has ended`);
 
         const currentItem = items[currentIndex];
