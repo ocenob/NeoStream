@@ -45,6 +45,7 @@ const streamingService = require('./services/streamingService');
 const schedulerService = require('./services/schedulerService');
 const rotationService = require('./services/rotationService');
 const SmartSchedulerService = require('./services/smartSchedulerService');
+const AutoSchedulerService = require('./services/autoScheduler');
 const packageJson = require('./package.json');
 const { encrypt, decrypt } = require('./utils/encryption');
 const { google } = require('googleapis');
@@ -5164,6 +5165,40 @@ app.put('/api/playlists/:id/videos/reorder', isAuthenticated, [
   } catch (error) {
     console.error('Error reordering videos:', error);
     res.status(500).json({ success: false, error: 'Failed to reorder videos' });
+  }
+});
+
+// Smart Rotation Generation
+app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (req, res) => {
+  try {
+    const channelId = req.params.id;
+    const userId = req.session.userId;
+
+    // Verify ownership
+    const YoutubeChannel = require('./models/YoutubeChannel');
+    const channel = await YoutubeChannel.findById(channelId);
+    if (!channel) return res.status(404).json({ success: false, error: 'Channel not found' });
+    if (channel.user_id !== userId) return res.status(403).json({ success: false, error: 'Unauthorized' });
+
+    const config = {
+      daysCount: parseInt(req.body.daysCount) || 14,
+      minStreamsPerDay: parseInt(req.body.minDailyHours) || 6, // UI sends 'minDailyHours'
+      maxStreamsPerDay: parseInt(req.body.maxDailyHours) || 12, // UI sends 'maxDailyHours'
+      contentType: req.body.contentType || 'video',
+      customTitles: req.body.customTitles || [], // Array from UI
+      minDurationHours: 3,
+      maxDurationHours: 7
+    };
+
+    // Set timeout to 5 minutes for long generation
+    req.setTimeout(300000);
+
+    const result = await AutoSchedulerService.generateRotationSchedule(channelId, userId, config);
+    res.json(result);
+
+  } catch (error) {
+    console.error('Error generating smart rotation:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
