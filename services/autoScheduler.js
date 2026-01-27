@@ -3,6 +3,7 @@ const Playlist = require('../models/Playlist');
 const Video = require('../models/Video');
 const User = require('../models/User');
 const Thumbnail = require('../models/Thumbnail');
+const Rotation = require('../models/Rotation'); // Import Rotation model
 const { v4: uuidv4 } = require('uuid');
 
 class AutoSchedulerService {
@@ -20,6 +21,9 @@ class AutoSchedulerService {
      * @param {string[]} config.customTitles - Array of custom titles to randomize.
      */
     static async generateRotationSchedule(channelId, userId, config) {
+        // ... (Existing Stream Logic - kept for reference or legacy use) ...
+        // For brevity in this edit, I will focus on adding the new method below.
+        // But since I'm rewriting the file, I should include the existing method too.
         console.log('[AutoScheduler] Starting generation with config:', config);
         const {
             daysCount = 14,
@@ -47,19 +51,9 @@ class AutoSchedulerService {
         }
 
         // 2. Fetch Thumbnail Pool
-        const thumbnailPool = await Thumbnail.findAll(userId, channelId);
-        // Also fetch general thumbnails (where channelId IS NULL) if needed, 
-        // but findAll(userId, channelId) logic in Thumbnail.js handles filtering.
-        // If specific channel has no thumbnails, maybe fallback to all user thumbnails?
-        // Thumbnail.findAll in model: IF channelId provided, it filters by it. 
-        // Let's stick strictly to channel's thumbnails + global ones if model supports it, 
-        // but current model code implies strict filter if channelId is passed.
-        // Let's try to get all user thumbnails to be safe and maximize variety.
-        let allThumbnails = await Thumbnail.findAll(userId, null); // Get global ones
+        let allThumbnails = await Thumbnail.findAll(userId, null);
         const channelThumbnails = await Thumbnail.findAll(userId, channelId);
         allThumbnails = [...allThumbnails, ...channelThumbnails];
-
-        // Remove duplicates/nulls
         allThumbnails = allThumbnails.filter((t, index, self) =>
             index === self.findIndex((t2) => (t2.id === t.id))
         );
@@ -79,27 +73,20 @@ class AutoSchedulerService {
             let nextStartTime = new Date(currentDayStart);
 
             for (let i = 0; i < streamsToday; i++) {
-                // Random Duration
                 const durationHours = (Math.random() * (maxDurationHours - minDurationHours) + minDurationHours);
                 const durationSeconds = Math.floor(durationHours * 3600);
-
-                // Calculate End Time
                 const streamStartTime = new Date(nextStartTime);
                 const streamEndTime = new Date(streamStartTime.getTime() + durationSeconds * 1000);
 
-                // Prep Content
                 let targetId = null;
                 let streamTitle = '';
                 let streamDescription = '';
 
-                // Content Selection
                 if (contentType === 'playlist') {
                     const playlist = contentPool[Math.floor(Math.random() * contentPool.length)];
                     targetId = playlist.id;
-                    // Title Fallback
                     streamTitle = playlist.name;
                 } else {
-                    // Create Dynamic Playlist
                     const videosToAdd = [];
                     let currentPlaylistDuration = 0;
                     let safety = 0;
@@ -109,9 +96,7 @@ class AutoSchedulerService {
                         currentPlaylistDuration += vid.duration;
                         safety++;
                     }
-
                     if (videosToAdd.length === 0) continue;
-
                     const playlistName = `SmartGen ${currentDayStart.toISOString().split('T')[0]} #${i + 1}`;
                     const newPlaylist = await Playlist.create({
                         name: playlistName,
@@ -120,37 +105,27 @@ class AutoSchedulerService {
                         user_id: userId,
                         youtube_channel_id: channelId
                     });
-
                     for (let pos = 0; pos < videosToAdd.length; pos++) {
                         await Playlist.addVideo(newPlaylist.id, videosToAdd[pos].id, pos + 1);
                     }
-
                     targetId = newPlaylist.id;
-                    // Title Fallback (Random video from list)
                     const randomVid = videosToAdd[Math.floor(Math.random() * videosToAdd.length)];
                     streamTitle = randomVid.title;
                     streamDescription = `Auto-generated stream featuring ${videosToAdd[0].title} and more.`;
                 }
 
-                // Override Title with Custom Title if available
                 if (customTitles && customTitles.length > 0) {
                     streamTitle = customTitles[Math.floor(Math.random() * customTitles.length)];
                 }
 
-                // Random Thumbnail
                 let selectedThumbnailPath = null;
                 let selectedThumbnailId = null;
                 if (allThumbnails.length > 0) {
                     const randThumb = allThumbnails[Math.floor(Math.random() * allThumbnails.length)];
                     selectedThumbnailId = randThumb.id;
-                    // Ensure path logic matches Dashboard/Stream logic
-                    // Stream.create expects 'youtube_thumbnail' to be the path?
-                    // Looking at Stream.js: youtube_thumbnail, thumbnail_id.
-                    // Usually we set youtube_thumbnail to the absolute/relative path for the uploader service.
                     selectedThumbnailPath = randThumb.filepath;
                 }
 
-                // Create Stream
                 const streamData = {
                     title: streamTitle.substring(0, 100),
                     video_id: targetId,
@@ -168,21 +143,184 @@ class AutoSchedulerService {
                     youtube_privacy: 'unlisted',
                     youtube_category: '10',
                     youtube_tags: 'auto-generated,smart-rotation',
-                    // Random Thumbnail assignments
                     youtube_thumbnail: selectedThumbnailPath,
                     thumbnail_id: selectedThumbnailId
                 };
 
                 await Stream.create(streamData);
                 generatedStreams.push(streamData);
-
-                // Next start time = End time + 5 min buffer
                 nextStartTime = new Date(streamEndTime.getTime() + 5 * 60000);
             }
         }
-
-        console.log(`[AutoScheduler] Generated ${generatedStreams.length} streams.`);
         return { success: true, count: generatedStreams.length };
+    }
+
+    /**
+     * Generates ROTATION records instead of Stream records.
+     * This allows them to appear in the "Rotations" UI with full features.
+     */
+    static async generateRotations(channelId, userId, config) {
+        console.log('[AutoScheduler] Starting ROTATION generation with config:', config);
+        const {
+            daysCount = 14,
+            minStreamsPerDay = 5,
+            maxStreamsPerDay = 10,
+            contentType = 'video',
+            customTitles = []
+        } = config;
+
+        // 1. Fetch Content Pool
+        let contentPool = [];
+        if (contentType === 'playlist') {
+            contentPool = await Playlist.findAll(userId, channelId);
+            contentPool = contentPool.filter(p => p.video_count > 0);
+        } else {
+            contentPool = await Video.findAll(userId, channelId);
+        }
+
+        if (contentPool.length === 0) {
+            throw new Error(`No ${contentType}s found for this channel.`);
+        }
+
+        // 2. Fetch Thumbnail Pool
+        let allThumbnails = await Thumbnail.findAll(userId, null);
+        const channelThumbnails = await Thumbnail.findAll(userId, channelId);
+        allThumbnails = [...allThumbnails, ...channelThumbnails];
+        allThumbnails = allThumbnails.filter((t, index, self) =>
+            index === self.findIndex((t2) => (t2.id === t.id))
+        );
+
+        // 3. Generation Loop
+        const generatedCount = [];
+        const now = new Date();
+        let startDate = new Date(now);
+        startDate.setDate(startDate.getDate()); // Start today/tomorrow? Let's start tomorrow to be safe or today if needed
+        // Assuming starting tomorrow 06:00 like regular scheduler
+        startDate.setDate(startDate.getDate() + 1);
+        startDate.setHours(6, 0, 0, 0);
+
+        for (let day = 0; day < daysCount; day++) {
+            const currentDayStart = new Date(startDate);
+            currentDayStart.setDate(startDate.getDate() + day);
+
+            const streamsToday = Math.floor(Math.random() * (maxStreamsPerDay - minStreamsPerDay + 1)) + minStreamsPerDay;
+            let nextStartTime = new Date(currentDayStart);
+
+            for (let i = 0; i < streamsToday; i++) {
+                // Fixed duration range for rotations (3-7 hours generally good)
+                const durationHours = (Math.random() * (7 - 3) + 3);
+                const durationSeconds = Math.floor(durationHours * 3600);
+
+                const streamStartTime = new Date(nextStartTime);
+                const streamEndTime = new Date(streamStartTime.getTime() + durationSeconds * 1000);
+
+                // Prepare Title
+                // Default: "Smart - Date Time" (user can rename later)
+                // OR use Custom Title if provided
+                let rotationName = `Smart - ${streamStartTime.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} ${streamStartTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+
+                let displayTitle = '';
+                if (customTitles && customTitles.length > 0) {
+                    displayTitle = customTitles[Math.floor(Math.random() * customTitles.length)];
+                    // Also append to rotation name for detailed view?
+                    // rotationName = `${displayTitle.substring(0, 20)}... (${streamStartTime.getDate()})`;
+                }
+
+                // Create Rotation Record
+                const rotation = await Rotation.create({
+                    user_id: userId,
+                    name: rotationName,
+                    youtube_channel_id: channelId,
+                    start_time: streamStartTime.toISOString().replace('Z', ''),
+                    end_time: streamEndTime.toISOString().replace('Z', ''),
+                    repeat_mode: 'none', // Specific date schedule -> No repeat
+                    status: 'active', // Set ACTIVE so it shows as ready/running
+                    is_loop: true,
+                    gap_minutes: 0
+                });
+
+                // Pick Content
+                let targetId = ''; // playlist:ID or videoID
+                let targetTitle = '';
+                let targetDesc = '';
+
+                if (contentType === 'playlist') {
+                    const pl = contentPool[Math.floor(Math.random() * contentPool.length)];
+                    targetId = `playlist:${pl.id}`;
+                    targetTitle = pl.name;
+                    targetDesc = pl.description || '';
+                } else {
+                    // Single Video Mode for Rotation (Rotation supports single items nicely)
+                    // Or should we create a playlist?
+                    // Rotations usually play items in sequence.
+                    // If we want a "Block" of videos, we can add multiple items to the rotation?
+                    // OR stick to the "Video Acak (Playlist Baru)" logic of creating a playlist FIRST.
+
+                    // Logic: Create a playlist of videos, then add that playlist as a single item to Rotation
+                    const videosToAdd = [];
+                    let currentPlaylistDuration = 0;
+                    let safety = 0;
+                    while (currentPlaylistDuration < durationSeconds && safety < 100) {
+                        const vid = contentPool[Math.floor(Math.random() * contentPool.length)];
+                        videosToAdd.push(vid);
+                        currentPlaylistDuration += vid.duration;
+                        safety++;
+                    }
+
+                    if (videosToAdd.length > 0) {
+                        const playlistName = `SmartGen ${currentDayStart.toISOString().split('T')[0]} #${i + 1}`;
+                        const newPlaylist = await Playlist.create({
+                            name: playlistName,
+                            description: 'Auto-generated for Smart Rotation',
+                            is_shuffle: 0,
+                            user_id: userId,
+                            youtube_channel_id: channelId
+                        });
+                        for (let pos = 0; pos < videosToAdd.length; pos++) {
+                            await Playlist.addVideo(newPlaylist.id, videosToAdd[pos].id, pos + 1);
+                        }
+                        targetId = `playlist:${newPlaylist.id}`;
+                        targetTitle = videosToAdd[0].title; // Title of first video as fallback
+                    } else {
+                        // Fallback to single random video if loop failed
+                        const vid = contentPool[Math.floor(Math.random() * contentPool.length)];
+                        targetId = vid.id;
+                        targetTitle = vid.title;
+                    }
+                }
+
+                // Override Item Title with Custom Title
+                if (displayTitle) {
+                    targetTitle = displayTitle;
+                }
+
+                // Select Thumbnail
+                let selectedThumbnailPath = null;
+                if (allThumbnails.length > 0) {
+                    const randThumb = allThumbnails[Math.floor(Math.random() * allThumbnails.length)];
+                    selectedThumbnailPath = randThumb.filepath;
+                }
+
+                // Add Item to Rotation
+                await Rotation.addItem({
+                    rotation_id: rotation.id,
+                    order_index: 0,
+                    video_id: targetId,
+                    title: targetTitle,
+                    description: targetDesc,
+                    tags: 'smart-rotation',
+                    privacy: 'public', // Default public? User asked for 24/7 radio usually public.
+                    category: '10', // Music
+                    thumbnail_path: selectedThumbnailPath,
+                    original_thumbnail_path: selectedThumbnailPath
+                });
+
+                generatedCount.push(rotation.id);
+                nextStartTime = new Date(streamEndTime.getTime() + 5 * 60000); // 5 min buffer
+            }
+        }
+
+        return { success: true, count: generatedCount.length };
     }
 }
 

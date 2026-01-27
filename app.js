@@ -1137,7 +1137,13 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
     const daysCount = parseInt(req.body.daysCount) || 14;
     const minDailyHours = parseInt(req.body.minDailyHours) || 5;
     const maxDailyHours = parseInt(req.body.maxDailyHours) || 10;
-    const contentType = req.body.contentType || 'videos';
+
+    // Normalize contentType to singular for service
+    let contentType = req.body.contentType || 'video';
+    if (contentType === 'videos') contentType = 'video';
+    if (contentType === 'playlists') contentType = 'playlist';
+
+    const customTitles = req.body.customTitles || [];
     const repeatMode = req.body.repeatMode || 'once';
 
     const Rotation = require('./models/Rotation');
@@ -1151,61 +1157,26 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
       return res.status(403).json({ success: false, error: 'Channel not found or access denied' });
     }
 
-    let availableContent = [];
-    if (contentType === 'playlists') {
-      availableContent = await Playlist.findAll(userId, channelId);
-    } else {
-      availableContent = await Video.findAll(userId, channelId);
-    }
+    const AutoSchedulerService = require('./services/autoScheduler');
 
-    if (availableContent.length === 0) {
-      return res.status(400).json({ success: false, error: `No ${contentType} found. Please upload some content first.` });
-    }
-
-    const scheduler = new SmartSchedulerService({
-      minDailyHours,
-      maxDailyHours,
-      minStreamDuration: 3,
-      maxStreamDuration: 7
+    const result = await AutoSchedulerService.generateRotations(channelId, userId, {
+      daysCount,
+      minStreamsPerDay: minDailyHours, // Mapping "hours" variable name to "streams count"? 
+      // WAIT. The UI inputs are "Min Daily Hours" (e.g. 5 hours total?) OR "Min Streams"?
+      // Previous code: minDailyHours treated as COUNT in previous manual implementation? 
+      // Let's check: 
+      // user view: "Min Stream per Hari" (Count) -> id='smartMinDailyHours'
+      // user view: "Max Stream per Hari" (Count) -> id='smartMaxDailyHours'
+      // So the variable naming 'minDailyHours' in app.js was misleading, it holds the count.
+      minStreamsPerDay: minDailyHours,
+      maxStreamsPerDay: maxDailyHours,
+      contentType, // 'video' or 'playlist' (check values)
+      customTitles: customTitles // Need to parse from body
     });
-
-    const schedules = await scheduler.generateFullSchedule(user, channel, daysCount);
-
-    let savedCount = 0;
-    for (const schedule of schedules) {
-      // Create rotation first
-      const rotation = await Rotation.create({
-        user_id: userId,
-        name: `Smart - ${schedule.start.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} ${schedule.start.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
-        youtube_channel_id: channelId,
-        start_time: schedule.start.toISOString().replace('Z', ''),
-        end_time: schedule.end.toISOString().replace('Z', ''),
-        repeat_mode: repeatMode,
-        status: 'inactive'
-      });
-
-      // Pick random content and add as item
-      const randomContent = availableContent[Math.floor(Math.random() * availableContent.length)];
-
-      await Rotation.addItem({
-        rotation_id: rotation.id,
-        order_index: 0,
-        video_id: contentType === 'playlists' ? `playlist:${randomContent.id}` : randomContent.id,
-        title: randomContent.name || randomContent.title,
-        description: randomContent.description || '',
-        tags: '',
-        privacy: 'public',
-        category: '20',
-        thumbnail_path: randomContent.thumbnail_path || null,
-        original_thumbnail_path: randomContent.thumbnail_path || null
-      });
-
-      savedCount++;
-    }
 
     res.json({
       success: true,
-      message: `Successfully generated ${savedCount} smart rotations for the next ${daysCount} days!`
+      message: `Successfully generated ${result.count} smart rotations for the next ${daysCount} days!`
     });
   } catch (e) {
     console.error('Smart Rotation Error:', e);
