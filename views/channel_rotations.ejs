@@ -21,6 +21,11 @@
             </div>
         </div>
         <div class="flex flex-wrap gap-3">
+            <button id="btnBulkDelete" onclick="bulkDeleteRotations()"
+                class="hidden flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-red-500/20 transform hover:scale-105 active:scale-95">
+                <i class="ti ti-trash"></i>
+                <span>Delete (<span id="selectedCount">0</span>)</span>
+            </button>
             <button id="btnGenerateSmart" onclick="generateSmartRotation()"
                 class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-purple-500/20 transform hover:scale-105 active:scale-95">
                 <i class="ti ti-brain"></i>
@@ -174,6 +179,12 @@
                 <table class="min-w-full">
                     <thead class="bg-dark-700/80">
                         <tr>
+                            <th class="px-6 py-4 w-10">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="selectAllRotations"
+                                        class="w-4 h-4 text-primary bg-dark-900 border-gray-700 rounded focus:ring-primary focus:ring-offset-dark-800">
+                                </div>
+                            </th>
                             <th
                                 class="px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                 Rotation Name
@@ -199,6 +210,13 @@
                     <tbody class="divide-y divide-gray-700/50">
                         <% rotations.forEach(rotation=> { %>
                             <tr class="hover:bg-dark-700/30 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <input type="checkbox"
+                                            class="rotation-checkbox w-4 h-4 text-primary bg-dark-900 border-gray-700 rounded focus:ring-primary focus:ring-offset-dark-800"
+                                            value="<%= rotation.id %>">
+                                    </div>
+                                </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-4">
                                         <div
@@ -499,13 +517,13 @@
                     </div>
                 </div>
 
-                
+
                 <!-- Smart Rotation Configuration Modal -->
                 <div id="smartConfigModal"
                     class="fixed inset-0 flex items-center justify-center z-[60] hidden bg-black/50 backdrop-blur-sm">
                     <div
                         class="modal-container bg-dark-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-700 transform transition-all duration-300 opacity-0 scale-95 flex flex-col max-h-[90vh]">
-                        
+
                         <!-- Header -->
                         <div class="p-6 pb-2">
                             <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
@@ -517,7 +535,7 @@
 
                         <!-- Scrollable Body -->
                         <div class="p-6 pt-2 overflow-y-auto custom-scrollbar space-y-4">
-                            
+
                             <!-- Days Count -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">
@@ -525,7 +543,8 @@
                                 </label>
                                 <input type="number" id="smartDaysCount" value="14" min="1" max="365"
                                     class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                                <p class="text-xs text-gray-500 mt-1">Max: 365 hari. Proses ini memakan waktu beberapa detik.</p>
+                                <p class="text-xs text-gray-500 mt-1">Max: 365 hari. Proses ini memakan waktu beberapa
+                                    detik.</p>
                             </div>
 
                             <!-- Min Streams -->
@@ -556,7 +575,8 @@
                                 <textarea id="smartCustomTitles" rows="3"
                                     class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                                     placeholder="Masukkan daftar judul (satu per baris). Sistem akan memilih satu secara acak untuk setiap stream.&#10;Contoh:&#10;Lofi Hip Hop Radio&#10;Jazz Relaxing Music&#10;Study Beats 24/7"></textarea>
-                                <p class="text-xs text-gray-500 mt-1">Jika kosong, judul diambil dari nama video/playlist.</p>
+                                <p class="text-xs text-gray-500 mt-1">Jika kosong, judul diambil dari nama
+                                    video/playlist.</p>
                             </div>
 
                             <!-- Content Selector -->
@@ -588,11 +608,11 @@
                 </div>
 
 
-<script>
-                                        // Safe Data Initialization
-                    const videos = <%- JSON.stringify(videos || []) %>;
-                    const playlists = <%- JSON.stringify(playlists || []) %>;
-                    const thumbnails = <%- JSON.stringify(thumbnails || []) %>;
+                <script>
+                    // Safe Data Initialization
+                    const videos = <% - JSON.stringify(videos || []) %>;
+                    const playlists = <% - JSON.stringify(playlists || []) %>;
+                    const thumbnails = <% - JSON.stringify(thumbnails || []) %>;
                     const csrfToken = '<%= csrfToken %>';
                     let rotationItemCount = 0;
 
@@ -1217,6 +1237,87 @@
                         window.location.reload();
                     }
 
+                    // -- Bulk Delete Logic --
+                    const selectAllCheckbox = document.getElementById('selectAllRotations');
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.addEventListener('change', function () {
+                            const checked = this.checked;
+                            document.querySelectorAll('.rotation-checkbox').forEach(cb => {
+                                cb.checked = checked;
+                            });
+                            updateBulkDeleteButton();
+                        });
+                    }
+
+                    // Event delegation for dynamically added rows (if any) or existing ones
+                    // Since rows are static on rendering, direct looping is fine or delegation on standard table/list
+                    // Using delegation on document or table body is safer if we had dynamic loads, but for now simple loop is fine.
+                    // Better: Add listener to a parent container or re-bind?
+                    // Let's add listener to document for simplicity on change
+                    document.addEventListener('change', function (e) {
+                        if (e.target.classList.contains('rotation-checkbox')) {
+                            updateBulkDeleteButton();
+
+                            // Update Select All state
+                            const all = document.querySelectorAll('.rotation-checkbox').length;
+                            const checked = document.querySelectorAll('.rotation-checkbox:checked').length;
+                            if (selectAllCheckbox) selectAllCheckbox.checked = (all > 0 && all === checked);
+                        }
+                    });
+
+                    function updateBulkDeleteButton() {
+                        const count = document.querySelectorAll('.rotation-checkbox:checked').length;
+                        const btn = document.getElementById('btnBulkDelete');
+                        const countSpan = document.getElementById('selectedCount');
+
+                        if (btn && countSpan) {
+                            countSpan.textContent = count;
+                            if (count > 0) {
+                                btn.classList.remove('hidden');
+                            } else {
+                                btn.classList.add('hidden');
+                            }
+                        }
+                    }
+
+                    window.bulkDeleteRotations = async function () {
+                        const selected = Array.from(document.querySelectorAll('.rotation-checkbox:checked')).map(cb => cb.value);
+                        if (selected.length === 0) return;
+
+                        if (!(await showConfirm(`Delete ${selected.length} selected rotations? This cannot be undone.`))) return;
+
+                        const btn = document.getElementById('btnBulkDelete');
+                        const originalContent = btn.innerHTML;
+                        btn.innerHTML = '<i class="ti ti-loader animate-spin"></i> Deleting...';
+                        btn.disabled = true;
+
+                        try {
+                            const res = await fetch('/api/rotations/bulk-delete', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-Token': csrfToken
+                                },
+                                body: JSON.stringify({ ids: selected })
+                            });
+                            const data = await res.json();
+
+                            if (data.success) {
+                                showToast('success', `Deleted ${data.deletedCount} rotations`);
+                                setTimeout(() => window.location.reload(), 500);
+                            } else {
+                                showToast('error', data.error || 'Delete failed');
+                                btn.innerHTML = originalContent;
+                                btn.disabled = false;
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            showToast('error', 'Network error');
+                            btn.innerHTML = originalContent;
+                            btn.disabled = false;
+                        }
+                    }
+
                     // Auto-open modal if requested via URL
                     window.addEventListener('DOMContentLoaded', () => {
                         const urlParams = new URLSearchParams(window.location.search);
@@ -1232,10 +1333,10 @@
                         }
                     });
                 </script>
-<style>
-    /* Force modal visibility when active */
-    .modal-container.active {
-        opacity: 1 !important;
-        transform: scale(1) translateY(0) !important;
-    }
-</style>
+                <style>
+                    /* Force modal visibility when active */
+                    .modal-container.active {
+                        opacity: 1 !important;
+                        transform: scale(1) translateY(0) !important;
+                    }
+                </style>

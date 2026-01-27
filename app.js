@@ -5408,6 +5408,32 @@ app.put('/api/rotations/:id', isAuthenticated, uploadThumbnail.array('thumbnails
   }
 });
 
+app.post('/api/rotations/bulk-delete', isAuthenticated, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'No IDs provided' });
+    }
+
+    let deletedCount = 0;
+    for (const id of ids) {
+      const rotation = await Rotation.findById(id);
+      if (rotation && rotation.user_id === req.session.userId) {
+        if (rotation.status === 'active') {
+          await rotationService.stopRotation(id);
+        }
+        await Rotation.delete(id, req.session.userId);
+        deletedCount++;
+      }
+    }
+
+    res.json({ success: true, deletedCount });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete rotations' });
+  }
+});
+
 app.delete('/api/rotations/:id', isAuthenticated, async (req, res) => {
   try {
     const rotation = await Rotation.findById(req.params.id);
