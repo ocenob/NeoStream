@@ -731,6 +731,7 @@
 
             // Auto-refresh halaman setiap 10 detik untuk update status stream
             // TAPI hanya jika tidak ada modal yang sedang terbuka
+            /*
             setInterval(() => {
               // Check apakah ada modal yang terbuka
               const isModalOpen = document.querySelector('.modal')?.classList.contains('show') ||
@@ -742,6 +743,7 @@
                 window.location.reload();
               }
             }, 10000); // 10 detik
+            */
           </script>
 
           <%- include('partials/stream-modal') %>
