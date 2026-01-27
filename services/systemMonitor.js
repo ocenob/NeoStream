@@ -11,11 +11,23 @@ async function getSystemStats() {
       si.networkStats(),
       getDiskUsage()
     ]);
-    
-    const cpuUsage = cpuData.currentLoad || cpuData.avg || 0;
-    
+
+    // Debug CPU data
+    // console.log('CPU Data:', JSON.stringify(cpuData)); // Uncomment to debug in PM2 logs
+
+    let cpuUsage = 0;
+
+    if (cpuData.currentLoad !== undefined && cpuData.currentLoad !== null) {
+      cpuUsage = cpuData.currentLoad;
+    } else if (cpuData.currentLoadIdle) {
+      cpuUsage = 100 - cpuData.currentLoadIdle;
+    } else if (cpuData.avg) {
+      cpuUsage = cpuData.avg;
+    }
+
+
     const networkSpeed = calculateNetworkSpeed(networkData);
-    
+
     const formatMemory = (bytes) => {
       if (bytes >= 1073741824) {
         return (bytes / 1073741824).toFixed(2) + " GB";
@@ -23,7 +35,7 @@ async function getSystemStats() {
         return (bytes / 1048576).toFixed(2) + " MB";
       }
     };
-    
+
     return {
       cpu: {
         usage: Math.round(cpuUsage),
@@ -55,7 +67,7 @@ async function getSystemStats() {
 
 function calculateNetworkSpeed(networkData) {
   const currentTimestamp = Date.now();
-  
+
   if (!previousNetworkData || !previousTimestamp) {
     previousNetworkData = networkData;
     previousTimestamp = currentTimestamp;
@@ -66,32 +78,32 @@ function calculateNetworkSpeed(networkData) {
       uploadFormatted: '0 Mbps'
     };
   }
-  
+
   const timeDiff = (currentTimestamp - previousTimestamp) / 1000;
-  
+
   const currentTotal = networkData
     .filter(iface => !iface.iface.includes('lo') && !iface.iface.includes('Loopback'))
     .reduce((acc, iface) => ({
       rx_bytes: acc.rx_bytes + (iface.rx_bytes || 0),
       tx_bytes: acc.tx_bytes + (iface.tx_bytes || 0)
     }), { rx_bytes: 0, tx_bytes: 0 });
-  
+
   const previousTotal = previousNetworkData
     .filter(iface => !iface.iface.includes('lo') && !iface.iface.includes('Loopback'))
     .reduce((acc, iface) => ({
       rx_bytes: acc.rx_bytes + (iface.rx_bytes || 0),
       tx_bytes: acc.tx_bytes + (iface.tx_bytes || 0)
     }), { rx_bytes: 0, tx_bytes: 0 });
-  
+
   const downloadBps = Math.max(0, (currentTotal.rx_bytes - previousTotal.rx_bytes) / timeDiff);
   const uploadBps = Math.max(0, (currentTotal.tx_bytes - previousTotal.tx_bytes) / timeDiff);
-  
+
   const downloadMbps = (downloadBps * 8) / (1024 * 1024);
   const uploadMbps = (uploadBps * 8) / (1024 * 1024);
-  
+
   previousNetworkData = networkData;
   previousTimestamp = currentTimestamp;
-  
+
   return {
     download: downloadMbps,
     upload: uploadMbps,
@@ -114,34 +126,34 @@ async function getDiskUsage() {
   try {
     const fsSize = await si.fsSize();
     const platform = process.platform;
-    
+
     let targetDisk;
-    
+
     if (platform === 'win32') {
       const currentDrive = process.cwd().charAt(0).toUpperCase();
       targetDisk = fsSize.find(disk => disk.mount.charAt(0).toUpperCase() === currentDrive);
-      
+
       if (!targetDisk) {
         targetDisk = fsSize.find(disk => disk.mount.charAt(0).toUpperCase() === 'C');
       }
     } else {
       targetDisk = fsSize.find(disk => disk.mount === '/');
     }
-    
+
     if (!targetDisk) {
       targetDisk = fsSize[0];
     }
-    
+
     if (!targetDisk) {
       return {
         total: "0 GB",
-        used: "0 GB", 
+        used: "0 GB",
         free: "0 GB",
         usagePercent: 0,
         drive: "N/A"
       };
     }
-    
+
     const formatDisk = (bytes) => {
       if (bytes >= 1099511627776) {
         return (bytes / 1099511627776).toFixed(2) + " TB";
@@ -151,10 +163,10 @@ async function getDiskUsage() {
         return (bytes / 1048576).toFixed(2) + " MB";
       }
     };
-    
-    const usagePercent = targetDisk.size > 0 ? 
+
+    const usagePercent = targetDisk.size > 0 ?
       Math.round(((targetDisk.size - targetDisk.available) / targetDisk.size) * 100) : 0;
-    
+
     return {
       total: formatDisk(targetDisk.size),
       used: formatDisk(targetDisk.size - targetDisk.available),
@@ -167,7 +179,7 @@ async function getDiskUsage() {
     return {
       total: "0 GB",
       used: "0 GB",
-      free: "0 GB", 
+      free: "0 GB",
       usagePercent: 0,
       drive: "N/A"
     };
