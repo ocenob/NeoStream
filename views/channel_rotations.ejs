@@ -610,9 +610,9 @@
 
                 <script>
                     // Safe Data Initialization
-                    const videos = <%- JSON.stringify(videos || []) %>;
-                    const playlists = <%- JSON.stringify(playlists || []) %>;
-                    const thumbnails = <%- JSON.stringify(thumbnails || []) %>;
+                    const videos = <% - JSON.stringify(videos || []).replace(/</g, '\\u003c') %>;
+                    const playlists = <% - JSON.stringify(playlists || []).replace(/</g, '\\u003c') %>;
+                    const thumbnails = <% - JSON.stringify(thumbnails || []).replace(/</g, '\\u003c') %>;
                     const csrfToken = '<%= csrfToken %>';
                     let rotationItemCount = 0;
 
@@ -1239,35 +1239,26 @@
 
                         // -- Bulk Delete Logic --
                         (function () {
-                            function initBulkDelete() {
-                                console.log('Initializing Bulk Delete Logic');
-                                const selectAllCheckbox = document.getElementById('selectAllRotations');
-
-                                function updateBtn() {
-                                    const count = document.querySelectorAll('.rotation-checkbox:checked').length;
-                                    const btn = document.getElementById('btnBulkDelete');
-                                    const countSpan = document.getElementById('selectedCount');
-                                    if (btn && countSpan) {
-                                        countSpan.textContent = count;
-                                        if (count > 0) {
-                                            btn.classList.remove('hidden');
-                                        } else {
-                                            btn.classList.add('hidden');
-                                        }
-                                    }
+                            function updateBtn() {
+                                const count = document.querySelectorAll('.rotation-checkbox:checked').length;
+                                const btn = document.getElementById('btnBulkDelete');
+                                const countSpan = document.getElementById('selectedCount');
+                                if (btn && countSpan) {
+                                    countSpan.textContent = count;
+                                    if (count > 0) btn.classList.remove('hidden');
+                                    else btn.classList.add('hidden');
                                 }
+                            }
 
+                            function initBulkDelete() {
+                                const selectAllCheckbox = document.getElementById('selectAllRotations');
                                 if (selectAllCheckbox) {
                                     selectAllCheckbox.addEventListener('change', function () {
-                                        const checked = this.checked;
-                                        document.querySelectorAll('.rotation-checkbox').forEach(cb => {
-                                            cb.checked = checked;
-                                        });
+                                        document.querySelectorAll('.rotation-checkbox').forEach(cb => cb.checked = this.checked);
                                         updateBtn();
                                     });
                                 }
-
-                                document.addEventListener('change', function (e) {
+                                document.addEventListener('change', (e) => {
                                     if (e.target.classList.contains('rotation-checkbox')) {
                                         updateBtn();
                                         if (selectAllCheckbox) {
@@ -1277,16 +1268,11 @@
                                         }
                                     }
                                 });
-
-                                // Initialize button state
                                 updateBtn();
                             }
 
-                            if (document.readyState === 'loading') {
-                                document.addEventListener('DOMContentLoaded', initBulkDelete);
-                            } else {
-                                initBulkDelete();
-                            }
+                            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBulkDelete);
+                            else initBulkDelete();
                         })();
 
                     window.bulkDeleteRotations = async function () {
