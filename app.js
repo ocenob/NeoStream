@@ -4080,7 +4080,7 @@ app.post('/api/streams', isAuthenticated, [
     }
     const streamData = {
       title: req.body.title,
-      video_id: req.body.videoId || null,
+      video_id: req.body.videoId || req.body.playlistId || null,
       rtmp_url: req.body.rtmpUrl || '',
       stream_key: req.body.streamKey || 'PENDING',
       platform,
@@ -4526,7 +4526,7 @@ app.put('/api/streams/:id', isAuthenticated, uploadThumbnail.single('thumbnail')
 
     if (req.body.streamMode === 'youtube') {
       if (req.body.title) updateData.title = req.body.title;
-      if (req.body.videoId) updateData.video_id = req.body.videoId;
+      if (req.body.videoId || req.body.playlistId) updateData.video_id = req.body.videoId || req.body.playlistId;
       if (req.body.description !== undefined) updateData.youtube_description = req.body.description;
       if (req.body.privacy) updateData.youtube_privacy = req.body.privacy;
       if (req.body.category) updateData.youtube_category = req.body.category;
