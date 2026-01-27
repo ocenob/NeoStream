@@ -587,8 +587,8 @@
               </style>
 
               <script>
-                const videos = <% - JSON.stringify(videos).replace(/</g, '\\u003c') %>;
-                const playlists = <% - JSON.stringify(playlists || []).replace(/</g, '\\u003c') %>;
+                const videos = <%- JSON.stringify(videos).replace(/</g, '\\u003c') %>;
+                const playlists = <%- JSON.stringify(playlists || []).replace(/</g, '\\u003c') %>;
                 const csrfToken = '<%= csrfToken %>';
                 let rotationItemCount = 0;
 
