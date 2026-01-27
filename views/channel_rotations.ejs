@@ -722,8 +722,9 @@
                         const minDailyHours = parseInt(document.getElementById('smartMinDailyHours').value) || 5;
                         const maxDailyHours = parseInt(document.getElementById('smartMaxDailyHours').value) || 10;
                         const contentType = document.getElementById('smartContentType').value;
-                        const repeatMode = document.getElementById('smartRepeatMode').value;
-                        const rawTitles = document.getElementById('smartCustomTitles').value;
+                        // repeatMode removed from UI
+                        const rawTitlesInput = document.getElementById('smartCustomTitles');
+                        const rawTitles = rawTitlesInput ? rawTitlesInput.value : '';
                         const customTitles = rawTitles.split('\n').map(t => t.trim()).filter(t => t.length > 0);
 
                         closeSmartConfigModal();
@@ -745,8 +746,7 @@
                                     minDailyHours,
                                     maxDailyHours,
                                     contentType,
-                                    customTitles,
-                                    repeatMode
+                                    customTitles
                                 })
                             });
                             const data = await res.json();
