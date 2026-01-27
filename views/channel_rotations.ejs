@@ -1238,47 +1238,49 @@
                     }
 
                     // -- Bulk Delete Logic --
-                    const selectAllCheckbox = document.getElementById('selectAllRotations');
-                    if (selectAllCheckbox) {
-                        selectAllCheckbox.addEventListener('change', function () {
-                            const checked = this.checked;
-                            document.querySelectorAll('.rotation-checkbox').forEach(cb => {
-                                cb.checked = checked;
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const selectAllCheckbox = document.getElementById('selectAllRotations');
+                        if (selectAllCheckbox) {
+                            selectAllCheckbox.addEventListener('change', function () {
+                                const checked = this.checked;
+                                document.querySelectorAll('.rotation-checkbox').forEach(cb => {
+                                    cb.checked = checked;
+                                });
+                                updateBulkDeleteButton();
                             });
-                            updateBulkDeleteButton();
-                        });
-                    }
-
-                    // Event delegation for dynamically added rows (if any) or existing ones
-                    // Since rows are static on rendering, direct looping is fine or delegation on standard table/list
-                    // Using delegation on document or table body is safer if we had dynamic loads, but for now simple loop is fine.
-                    // Better: Add listener to a parent container or re-bind?
-                    // Let's add listener to document for simplicity on change
-                    document.addEventListener('change', function (e) {
-                        if (e.target.classList.contains('rotation-checkbox')) {
-                            updateBulkDeleteButton();
-
-                            // Update Select All state
-                            const all = document.querySelectorAll('.rotation-checkbox').length;
-                            const checked = document.querySelectorAll('.rotation-checkbox:checked').length;
-                            if (selectAllCheckbox) selectAllCheckbox.checked = (all > 0 && all === checked);
                         }
-                    });
 
-                    function updateBulkDeleteButton() {
-                        const count = document.querySelectorAll('.rotation-checkbox:checked').length;
-                        const btn = document.getElementById('btnBulkDelete');
-                        const countSpan = document.getElementById('selectedCount');
+                        // Event delegation for dynamically added rows (if any) or existing ones
+                        // Since rows are static on rendering, direct looping is fine or delegation on standard table/list
+                        // Using delegation on document or table body is safer if we had dynamic loads, but for now simple loop is fine.
+                        // Better: Add listener to a parent container or re-bind?
+                        // Let's add listener to document for simplicity on change
+                        document.addEventListener('change', function (e) {
+                            if (e.target.classList.contains('rotation-checkbox')) {
+                                updateBulkDeleteButton();
 
-                        if (btn && countSpan) {
-                            countSpan.textContent = count;
-                            if (count > 0) {
-                                btn.classList.remove('hidden');
-                            } else {
-                                btn.classList.add('hidden');
+                                // Update Select All state
+                                const all = document.querySelectorAll('.rotation-checkbox').length;
+                                const checked = document.querySelectorAll('.rotation-checkbox:checked').length;
+                                if (selectAllCheckbox) selectAllCheckbox.checked = (all > 0 && all === checked);
+                            }
+                        });
+
+                        function updateBulkDeleteButton() {
+                            const count = document.querySelectorAll('.rotation-checkbox:checked').length;
+                            const btn = document.getElementById('btnBulkDelete');
+                            const countSpan = document.getElementById('selectedCount');
+
+                            if (btn && countSpan) {
+                                countSpan.textContent = count;
+                                if (count > 0) {
+                                    btn.classList.remove('hidden');
+                                } else {
+                                    btn.classList.add('hidden');
+                                }
                             }
                         }
-                    }
+                    });
 
                     window.bulkDeleteRotations = async function () {
                         const selected = Array.from(document.querySelectorAll('.rotation-checkbox:checked')).map(cb => cb.value);
