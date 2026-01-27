@@ -565,27 +565,20 @@
               </style>
 
               <script>
-                const videos = <%- JSON.stringify(videos) %>;
-                const playlists = <%- JSON.stringify(playlists || []) %>;
+                const videos = <% - JSON.stringify(videos).replace(/</g, '\\u003c') %>;
+                const playlists = <% - JSON.stringify(playlists || []).replace(/</g, '\\u003c') %>;
                 const csrfToken = '<%= csrfToken %>';
                 let rotationItemCount = 0;
 
                 function updateRotationServerTime() {
-                  fetch('/api/server-time')
-                    .then(response => response.json())
-                    .then(data => {
-                      const serverTimeEl = document.getElementById('rotationServerTime');
-                      if (serverTimeEl && data.formattedTime) {
-                        serverTimeEl.textContent = `Server time: ${data.formattedTime}`;
-                      }
-                    })
-                    .catch(error => console.error('Error fetching server time:', error));
+                  const el = document.getElementById('rotationServerTime');
+                  if (!el) return;
+                  const clockEl = document.getElementById('server-clock');
+                  if (clockEl) el.textContent = `Server time: ${clockEl.textContent}`;
                 }
-
-                updateRotationServerTime();
                 setInterval(updateRotationServerTime, 1000);
 
-                window.calculateDuration = function() {
+                window.calculateDuration = function () {
                   const startTime = document.getElementById('rotationStartTime').value;
                   const endTime = document.getElementById('rotationEndTime').value;
                   const badge = document.getElementById('rotationDurationBadge');
@@ -619,30 +612,31 @@
                   const toast = document.getElementById('toast');
                   const toastIcon = document.getElementById('toast-icon');
                   const toastMessage = document.getElementById('toast-message');
+                  if (!toast || !toastIcon || !toastMessage) return;
+
+                  toast.classList.remove('hidden', 'border-l-4', 'border-green-400', 'border-red-400', 'border-yellow-400');
 
                   if (type === 'success') {
                     toastIcon.className = 'ti ti-check text-green-400 text-xl mr-2 font-loaded';
                     toast.classList.add('border-l-4', 'border-green-400');
-                    toast.classList.remove('border-l-4', 'border-red-400', 'border-yellow-400');
                   } else if (type === 'error') {
                     toastIcon.className = 'ti ti-x text-red-400 text-xl mr-2 font-loaded';
                     toast.classList.add('border-l-4', 'border-red-400');
-                    toast.classList.remove('border-l-4', 'border-green-400', 'border-yellow-400');
                   } else if (type === 'warning') {
                     toastIcon.className = 'ti ti-alert-triangle text-yellow-400 text-xl mr-2 font-loaded';
                     toast.classList.add('border-l-4', 'border-yellow-400');
-                    toast.classList.remove('border-l-4', 'border-green-400', 'border-red-400');
                   }
 
                   toastMessage.textContent = message;
-                  toast.classList.remove('hidden');
+                  toast.classList.add('active');
 
                   setTimeout(() => {
-                    toast.classList.add('hidden');
+                    toast.classList.remove('active');
+                    setTimeout(() => toast.classList.add('hidden'), 300);
                   }, 3000);
                 }
 
-                window.openCreateRotationModal = function() {
+                window.openCreateRotationModal = function () {
                   const modal = document.getElementById('createRotationModal');
                   document.getElementById('rotationModalTitle').textContent = 'Create New Rotation';
                   document.getElementById('rotationForm').reset();
@@ -667,7 +661,7 @@
                   });
                 }
 
-                window.closeCreateRotationModal = function() {
+                window.closeCreateRotationModal = function () {
                   const modal = document.getElementById('createRotationModal');
                   modal.classList.remove('active');
                   setTimeout(() => {
@@ -685,7 +679,7 @@
                   return `${m}:${s.toString().padStart(2, '0')}`;
                 }
 
-                window.addRotationItem = function() {
+                window.addRotationItem = function () {
                   rotationItemCount++;
                   const container = document.getElementById('rotationItemsContainer');
                   const idx = rotationItemCount;
@@ -1023,7 +1017,7 @@
                   toggleRotationChannelDropdown();
                 }
 
-                window.saveRotation = async function() {
+                window.saveRotation = async function () {
                   const rotationId = document.getElementById('rotationId').value;
                   const name = document.getElementById('rotationName').value;
                   const repeatMode = document.getElementById('repeatMode').value;
@@ -1162,7 +1156,7 @@
                   }
                 }
 
-                window.editRotation = async function(id) {
+                window.editRotation = async function (id) {
                   try {
                     const response = await fetch(`/api/rotations/${id}`);
                     const result = await response.json();
@@ -1291,7 +1285,7 @@
                   }
                 }
 
-                window.deleteRotation = async function(id) {
+                window.deleteRotation = async function (id) {
                   if (!(await showConfirm('Are you sure you want to delete this rotation?'))) return;
 
                   try {
@@ -1312,7 +1306,7 @@
                   }
                 }
 
-                window.activateRotation = async function(id) {
+                window.activateRotation = async function (id) {
                   try {
                     const response = await fetch(`/api/rotations/${id}/activate`, {
                       method: 'POST',
@@ -1331,7 +1325,7 @@
                   }
                 }
 
-                window.stopRotation = async function(id) {
+                window.stopRotation = async function (id) {
                   try {
                     const response = await fetch(`/api/rotations/${id}/stop`, {
                       method: 'POST',

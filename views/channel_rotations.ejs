@@ -617,17 +617,14 @@
                     let rotationItemCount = 0;
 
                     // -- Server Time --
+                    // -- Server Time -- (Handled by layout.ejs)
                     function updateRotationServerTime() {
-                        fetch('/api/server-time')
-                            .then(r => r.json())
-                            .then(data => {
-                                const el = document.getElementById('rotationServerTime');
-                                if (el && data.formattedTime) el.textContent = `Server: ${data.formattedTime}`;
-                            })
-                            .catch(e => console.error(e));
+                        const el = document.getElementById('rotationServerTime');
+                        if (!el) return;
+                        const clockEl = document.getElementById('server-clock');
+                        if (clockEl) el.textContent = `Server: ${clockEl.textContent}`;
                     }
-                    updateRotationServerTime();
-                    setInterval(updateRotationServerTime, 60000);
+                    setInterval(updateRotationServerTime, 1000);
 
                     // -- Duration --
                     window.calculateDuration = function () {
@@ -661,22 +658,23 @@
                         const toast = document.getElementById('toast');
                         const icon = document.getElementById('toast-icon');
                         const msg = document.getElementById('toast-message');
+                        if (!toast || !icon || !msg) return;
 
-                        toast.className = 'fixed top-6 right-6 bg-dark-800 text-white px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center border border-gray-700 transform transition-all duration-300';
+                        toast.classList.remove('hidden', 'border-green-500/50', 'border-red-500/50');
 
                         if (type === 'success') {
-                            icon.className = 'ti ti-check text-green-500 mr-3 text-xl';
+                            icon.className = 'ti ti-check text-green-500';
                             toast.classList.add('border-green-500/50');
                         } else {
-                            icon.className = 'ti ti-alert-triangle text-red-500 mr-3 text-xl';
+                            icon.className = 'ti ti-alert-triangle text-red-500';
                             toast.classList.add('border-red-500/50');
                         }
 
                         msg.textContent = message;
-                        toast.classList.remove('hidden', 'translate-y-[-20px]', 'opacity-0');
+                        toast.classList.add('active');
 
                         setTimeout(() => {
-                            toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                            toast.classList.remove('active');
                             setTimeout(() => toast.classList.add('hidden'), 300);
                         }, 3000);
                     }

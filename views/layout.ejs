@@ -1014,3 +1014,21 @@
     });
   };
 </script>
+
+<!-- Global Toast Container -->
+<div id="toast"
+  class="fixed top-6 right-6 bg-dark-800 text-white px-5 py-3 rounded-xl shadow-2xl z-[9999] hidden items-center border border-gray-700 transform transition-all duration-300 translate-y-[-20px] opacity-0">
+  <i id="toast-icon" class="mr-3 text-xl"></i>
+  <span id="toast-message" class="text-sm font-medium"></span>
+</div>
+
+<style>
+  #toast.active {
+    display: flex !important;
+    transform: translateY(0);
+    opacity: 1;
+  }
+</style>
+</body>
+
+</html>
