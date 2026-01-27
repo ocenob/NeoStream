@@ -36,10 +36,14 @@ function detectHardwareEncoder() {
     // We limit output check to avoid large buffer issues, though 'ffmpeg -encoders' is usually safe
     const output = execSync(`"${ffmpegPath}" -encoders`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
 
+    // NVENC is detected but crashes (missing libcuda.so.1), so we skip it.
+    /*
     if (output.includes('h264_nvenc')) {
       cachedEncoder = 'h264_nvenc';
       console.log('[StreamingService] Hardware Acceleration: NVIDIA NVENC enabled.');
-    } else if (output.includes('h264_qsv')) {
+    } else
+    */
+    if (output.includes('h264_qsv')) {
       cachedEncoder = 'h264_qsv';
       console.log('[StreamingService] Hardware Acceleration: Intel QSV enabled.');
     } else if (output.includes('h264_amf')) {
@@ -223,7 +227,7 @@ async function buildFFmpegArgsForPlaylist(stream, playlist) {
     const fps = stream.fps || 30;
     const resolution = stream.resolution || '1280x720';
 
-    if (stream.use_advanced_settings) {
+    if (!stream.use_advanced_settings) {
       // LOW CPU MODE for Silence: Copy Video + Inject Silent Audio
       console.log('[StreamingService] Low CPU Mode (Copy) active. Generating silent audio.');
       return [
@@ -254,7 +258,7 @@ async function buildFFmpegArgsForPlaylist(stream, playlist) {
       ];
     }
 
-    console.log('[StreamingService] Standard Mode. Injecting silent audio with transcoding (HW Accel if avail).');
+    console.log('[StreamingService] Advanced/Standard Mode. Injecting silent audio with transcoding (HW Accel if avail).');
 
     // Normal Mode: Transcode Video (hopefully with HW) + Silent Audio
     const encoderArgs = getVideoEncoderArgs(resolution, bitrate, fps);
@@ -308,14 +312,7 @@ async function buildFFmpegArgsForPlaylist(stream, playlist) {
   fs.writeFileSync(audioConcatFile, audioContent);
 
   if (!stream.use_advanced_settings) {
-    console.log('[StreamingService] Playlist with Audio: Transcoding enforced (Standard Mode). Using HW Accel if avail.');
-
-    const resolution = stream.resolution || '1280x720';
-    const bitrate = stream.bitrate ? `${stream.bitrate}k` : '2500k';
-    const fps = stream.fps || 30;
-
-    const encoderArgs = getVideoEncoderArgs(resolution, bitrate, fps);
-
+    console.log('[StreamingService] Playlist with Audio: Copying streams (Low CPU).');
     return [
       '-nostdin',
       '-loglevel', 'info',
@@ -331,26 +328,24 @@ async function buildFFmpegArgsForPlaylist(stream, playlist) {
       '-map', '0:v:0',
       '-map', '1:a:0',
 
-      ...encoderArgs,
+      '-c:v', 'copy',
+      '-c:a', 'copy',
 
-      '-c:a', 'aac',
-      '-b:a', '128k',
-      '-ar', '44100',
-      '-ac', '2',
-      '-shortest',
       '-f', 'flv',
       '-flvflags', 'no_duration_filesize',
       rtmpUrl
     ];
   }
 
+  // Advanced Mode: Transcoding
+  console.log('[StreamingService] Advanced Mode. Enforcing transcoding using HW Accel if avail.');
+
   const resolution = stream.resolution || '1280x720';
-  const bitrate = stream.bitrate || 2500;
+  const bitrate = stream.bitrate ? `${stream.bitrate}k` : '2500k';
   const fps = stream.fps || 30;
 
-  // LOW CPU MODE (Hybrid Copy)
-  // Syarat: Semua video input harus punya resolusi/codec yang SAMA.
-  console.log('[StreamingService] Low CPU Mode detected. Using -c:v copy (Hybrid).');
+  const encoderArgs = getVideoEncoderArgs(resolution, bitrate, fps);
+
   return [
     '-nostdin',
     '-loglevel', 'info',
@@ -366,15 +361,12 @@ async function buildFFmpegArgsForPlaylist(stream, playlist) {
     '-map', '0:v:0',
     '-map', '1:a:0',
 
-    // Video: Copy only (NO Transcoding)
-    '-c:v', 'copy',
+    ...encoderArgs,
 
-    // Audio: Re-encode (Needed for mixing)
     '-c:a', 'aac',
     '-b:a', '128k',
     '-ar', '44100',
     '-ac', '2',
-
     '-shortest',
     '-f', 'flv',
     '-flvflags', 'no_duration_filesize',
@@ -438,7 +430,7 @@ async function buildFFmpegArgs(stream) {
   const fps = stream.fps || 30;
 
   // CRITICAL FIX: YouTube Live memerlukan audio + video (advanced mode)
-  // CRITICAL FIX: YouTube Live memerlukan audio + video (advanced mode)
+
   const encoderArgs = getVideoEncoderArgs(resolution, `${bitrate}k`, fps);
 
   return [
