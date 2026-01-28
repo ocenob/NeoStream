@@ -834,9 +834,72 @@
                         document.body.insertAdjacentHTML('beforeend', modalHTML);
                     }
 
-                    window.renameFile = async function (id, currentTitle) {
-                        const newTitle = prompt('Enter new name:', currentTitle);
-                        if (!newTitle || newTitle === currentTitle) return;
+                        <!-- Rename Modal -->
+                    // Inject Rename Modal
+                    const renameModalHTML = `
+                    <div id="renameModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden modal-overlay flex items-center justify-center p-4">
+                        <div class="bg-dark-800 rounded-lg shadow-xl w-full max-w-md border border-gray-700">
+                            <div class="flex items-center justify-between p-4 border-b border-gray-700">
+                                <h3 class="text-lg font-semibold text-white">Rename Item</h3>
+                                <button onclick="closeRenameModal()" class="text-gray-400 hover:text-white transition-colors">
+                                    <i class="ti ti-x text-xl"></i>
+                                </button>
+                            </div>
+                            <div class="p-6">
+                                <form id="renameForm" onsubmit="handleRenameSubmit(event)">
+                                    <input type="hidden" id="renameItemId">
+                                    <div class="mb-4">
+                                        <label for="renameInput" class="block text-sm font-medium text-gray-400 mb-1">Name</label>
+                                        <input type="text" id="renameInput" 
+                                            class="w-full bg-dark-700 border border-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary placeholder-gray-500" 
+                                            placeholder="Enter new name" required>
+                                    </div>
+                                    <div class="flex justify-end gap-3">
+                                        <button type="button" onclick="closeRenameModal()" 
+                                            class="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-dark-700 transition-colors">
+                                            Cancel
+                                        </button>
+                                        <button type="submit" 
+                                            class="px-4 py-2 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium transition-colors shadow-lg shadow-blue-500/20">
+                                            Save Changes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', renameModalHTML);
+
+                    window.renameFile = function(id, currentTitle) {
+                        const modal = document.getElementById('renameModal');
+                        const input = document.getElementById('renameInput');
+                        const itemId = document.getElementById('renameItemId');
+                        
+                        if (modal && input && itemId) {
+                            itemId.value = id;
+                            input.value = currentTitle;
+                            modal.classList.remove('hidden');
+                            setTimeout(() => input.focus(), 50);
+                        }
+                    }
+
+                    window.closeRenameModal = function() {
+                        const modal = document.getElementById('renameModal');
+                        if (modal) modal.classList.add('hidden');
+                    }
+
+                    window.handleRenameSubmit = async function(e) {
+                        e.preventDefault();
+                        const id = document.getElementById('renameItemId').value;
+                        const newTitle = document.getElementById('renameInput').value.trim();
+                        const submitBtn = e.target.querySelector('button[type="submit"]');
+
+                        if (!newTitle) return;
+                        
+                        const originalBtnText = submitBtn.innerHTML;
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="ti ti-loader animate-spin mr-2"></i>Saving...';
 
                         try {
                             const endpoint = mediaType === 'image' ? `/api/thumbnails/${id}/rename` : `/api/videos/${id}/rename`;
@@ -845,18 +908,30 @@
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ title: newTitle })
                             });
+                            
                             const data = await res.json();
+                            
                             if (data.success) {
-                                await window.showToast('success', 'Renamed successfully');
+                                window.showToast('success', 'Renamed successfully');
+                                closeRenameModal();
                                 setTimeout(() => location.reload(), 500);
                             } else {
-                                await window.showToast('error', data.error || 'Failed to rename');
+                                window.showToast('error', data.error || 'Failed to rename');
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = originalBtnText;
                             }
                         } catch (e) {
                             console.error(e);
-                            await window.showToast('error', 'Error occurred');
+                            window.showToast('error', 'Error occurred');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnText;
                         }
                     }
+
+                    document.addEventListener('click', function(e) {
+                        const modal = document.getElementById('renameModal');
+                        if (modal && e.target === modal) closeRenameModal();
+                    });
 
                     window.deleteFile = async function (id, title) {
                         if (!(await window.showConfirm(`Delete ${title}?`))) return;
