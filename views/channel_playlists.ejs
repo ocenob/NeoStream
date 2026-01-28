@@ -507,7 +507,8 @@
 
             <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
             <script>
-                function showToast(message, type = 'info') {
+                // Utility for toasts
+                window.showToast = function (message, type = 'info') {
                     const toast = document.createElement('div');
                     toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white transform transition-all duration-300 translate-y-full z-[60] ${type === 'success' ? 'bg-green-600' :
                         type === 'error' ? 'bg-red-600' :
@@ -525,48 +526,61 @@
                         toast.classList.add('translate-y-full', 'opacity-0');
                         setTimeout(() => toast.remove(), 300);
                     }, 3000);
-                }
+                };
 
                 // Bulk Delete Logic
-                function updateBulkActions() {
+                window.updateBulkActions = function () {
                     const checkboxes = document.querySelectorAll('.playlist-checkbox:checked');
                     const count = checkboxes.length;
-                    document.getElementById('selectedCount').textContent = count;
+                    const selectedCountSpan = document.getElementById('selectedCount');
+                    if (selectedCountSpan) selectedCountSpan.textContent = count;
 
                     const bulkActions = document.getElementById('bulkActions');
-                    if (count > 0) {
-                        bulkActions.classList.remove('hidden');
-                    } else {
-                        bulkActions.classList.add('hidden');
+                    if (bulkActions) {
+                        if (count > 0) {
+                            bulkActions.classList.remove('hidden');
+                            bulkActions.style.display = 'inline-flex';
+                        } else {
+                            bulkActions.classList.add('hidden');
+                            bulkActions.style.display = 'none';
+                        }
                     }
 
                     // Update Select All button state
                     const allCheckboxes = document.querySelectorAll('.playlist-checkbox');
                     const selectAllBtn = document.getElementById('selectAllBtn');
-                    if (count === allCheckboxes.length && count > 0) {
-                        selectAllBtn.classList.add('bg-primary/20', 'text-primary', 'border-primary');
-                        selectAllBtn.innerHTML = '<i class="ti ti-checkbox"></i><span>Deselect All</span>';
-                    } else {
-                        selectAllBtn.classList.remove('bg-primary/20', 'text-primary', 'border-primary');
-                        selectAllBtn.innerHTML = '<i class="ti ti-checkbox"></i><span>Select All</span>';
-                    }
-                }
 
-                function toggleSelectAll() {
+                    if (selectAllBtn) {
+                        if (allCheckboxes.length > 0 && count === allCheckboxes.length) {
+                            selectAllBtn.classList.add('bg-primary/20', 'text-primary', 'border-primary');
+                            selectAllBtn.innerHTML = '<i class="ti ti-checkbox"></i><span>Deselect All</span>';
+                        } else {
+                            selectAllBtn.classList.remove('bg-primary/20', 'text-primary', 'border-primary');
+                            selectAllBtn.innerHTML = '<i class="ti ti-checkbox"></i><span>Select All</span>';
+                        }
+                    }
+                };
+
+                window.toggleSelectAll = function () {
                     const checkboxes = document.querySelectorAll('.playlist-checkbox');
+                    if (checkboxes.length === 0) {
+                        console.warn('No playlists to select');
+                        return;
+                    }
+
                     const allChecked = Array.from(checkboxes).every(cb => cb.checked);
 
                     checkboxes.forEach(cb => cb.checked = !allChecked);
-                    updateBulkActions();
-                }
+                    window.updateBulkActions();
+                };
 
-                async function bulkDeletePlaylists() {
+                window.bulkDeletePlaylists = async function () {
                     const checkboxes = document.querySelectorAll('.playlist-checkbox:checked');
                     const ids = Array.from(checkboxes).map(cb => cb.value);
 
                     if (ids.length === 0) return;
 
-                    if (await showConfirm(`Are you sure you want to delete ${ids.length} playlists? This action cannot be undone.`)) {
+                    if (await window.showConfirm(`Are you sure you want to delete ${ids.length} playlists? This action cannot be undone.`)) {
                         try {
                             const response = await fetch('/api/playlists/bulk-delete', {
                                 method: 'POST',
@@ -576,24 +590,25 @@
 
                             const data = await response.json();
                             if (data.success) {
-                                showToast(data.message || 'Playlists deleted successfully', 'success');
+                                window.showToast(data.message || 'Playlists deleted successfully', 'success');
                                 setTimeout(() => location.reload(), 1000);
                             } else {
-                                showToast(data.error || 'Failed to delete playlists', 'error');
+                                window.showToast(data.error || 'Failed to delete playlists', 'error');
                             }
                         } catch (error) {
                             console.error('Bulk delete error:', error);
-                            showToast('An error occurred', 'error');
+                            window.showToast('An error occurred', 'error');
                         }
                     }
-                }
+                };
 
-                function showConfirm(message) {
+                window.showConfirm = function (message) {
                     return new Promise(resolve => {
                         const confirmed = confirm(message);
                         resolve(confirmed);
                     });
-                }
+                };
+
                 let selectedVideos = [];
                 let selectedAudios = [];
                 let currentPlaylistId = null;
