@@ -166,7 +166,10 @@ class AutoSchedulerService {
             minStreamsPerDay = 5,
             maxStreamsPerDay = 10,
             contentType = 'video',
-            customTitles = []
+            customTitles = [],
+            privacy = 'public',
+            repeatMode = 'none',
+            thumbnailMode = 'auto' // auto | gallery | video
         } = config;
 
         // 1. Fetch Content Pool
@@ -182,20 +185,21 @@ class AutoSchedulerService {
             throw new Error(`No ${contentType}s found for this channel.`);
         }
 
-        // 2. Fetch Thumbnail Pool
-        let allThumbnails = await Thumbnail.findAll(userId, null);
-        const channelThumbnails = await Thumbnail.findAll(userId, channelId);
-        allThumbnails = [...allThumbnails, ...channelThumbnails];
-        allThumbnails = allThumbnails.filter((t, index, self) =>
-            index === self.findIndex((t2) => (t2.id === t.id))
-        );
+        // 2. Fetch Thumbnail Pool (Gallery)
+        let galleryThumbnails = [];
+        if (thumbnailMode !== 'video') {
+            galleryThumbnails = await Thumbnail.findAll(userId, null);
+            const channelThumbnails = await Thumbnail.findAll(userId, channelId);
+            galleryThumbnails = [...galleryThumbnails, ...channelThumbnails];
+            galleryThumbnails = galleryThumbnails.filter((t, index, self) =>
+                index === self.findIndex((t2) => (t2.id === t.id))
+            );
+        }
 
         // 3. Generation Loop
         const generatedCount = [];
         const now = new Date();
         let startDate = new Date(now);
-        startDate.setDate(startDate.getDate()); // Start today/tomorrow? Let's start tomorrow to be safe or today if needed
-        // Assuming starting tomorrow 06:00 like regular scheduler
         startDate.setDate(startDate.getDate() + 1);
         startDate.setHours(6, 0, 0, 0);
 
@@ -207,23 +211,17 @@ class AutoSchedulerService {
             let nextStartTime = new Date(currentDayStart);
 
             for (let i = 0; i < streamsToday; i++) {
-                // Fixed duration range for rotations (3-7 hours generally good)
                 const durationHours = (Math.random() * (7 - 3) + 3);
                 const durationSeconds = Math.floor(durationHours * 3600);
 
                 const streamStartTime = new Date(nextStartTime);
                 const streamEndTime = new Date(streamStartTime.getTime() + durationSeconds * 1000);
 
-                // Prepare Title
-                // Default: "Smart - Date Time" (user can rename later)
-                // OR use Custom Title if provided
                 let rotationName = `Smart - ${streamStartTime.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} ${streamStartTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
 
                 let displayTitle = '';
                 if (customTitles && customTitles.length > 0) {
                     displayTitle = customTitles[Math.floor(Math.random() * customTitles.length)];
-                    // Also append to rotation name for detailed view?
-                    // rotationName = `${displayTitle.substring(0, 20)}... (${streamStartTime.getDate()})`;
                 }
 
                 // Create Rotation Record
@@ -233,30 +231,28 @@ class AutoSchedulerService {
                     youtube_channel_id: channelId,
                     start_time: streamStartTime.toISOString().replace('Z', ''),
                     end_time: streamEndTime.toISOString().replace('Z', ''),
-                    repeat_mode: 'none', // Specific date schedule -> No repeat
-                    status: 'active', // Set ACTIVE so it shows as ready/running
+                    repeat_mode: repeatMode,
+                    status: 'active',
                     is_loop: true,
                     gap_minutes: 0
                 });
 
                 // Pick Content
-                let targetId = ''; // playlist:ID or videoID
+                let targetId = '';
                 let targetTitle = '';
                 let targetDesc = '';
+                let contentThumbnailFallback = null;
 
                 if (contentType === 'playlist') {
                     const pl = contentPool[Math.floor(Math.random() * contentPool.length)];
                     targetId = `playlist:${pl.id}`;
                     targetTitle = pl.name;
                     targetDesc = pl.description || '';
+                    // Fallback to first video thumbnail if playlist thumbnails available
+                    if (pl.thumbnails) {
+                        contentThumbnailFallback = pl.thumbnails.split(',')[0];
+                    }
                 } else {
-                    // Single Video Mode for Rotation (Rotation supports single items nicely)
-                    // Or should we create a playlist?
-                    // Rotations usually play items in sequence.
-                    // If we want a "Block" of videos, we can add multiple items to the rotation?
-                    // OR stick to the "Video Acak (Playlist Baru)" logic of creating a playlist FIRST.
-
-                    // Logic: Create a playlist of videos, then add that playlist as a single item to Rotation
                     const videosToAdd = [];
                     let currentPlaylistDuration = 0;
                     let safety = 0;
@@ -280,43 +276,51 @@ class AutoSchedulerService {
                             await Playlist.addVideo(newPlaylist.id, videosToAdd[pos].id, pos + 1);
                         }
                         targetId = `playlist:${newPlaylist.id}`;
-                        targetTitle = videosToAdd[0].title; // Title of first video as fallback
+                        targetTitle = videosToAdd[0].title;
+                        contentThumbnailFallback = videosToAdd[0].thumbnail_path;
                     } else {
-                        // Fallback to single random video if loop failed
                         const vid = contentPool[Math.floor(Math.random() * contentPool.length)];
                         targetId = vid.id;
                         targetTitle = vid.title;
+                        contentThumbnailFallback = vid.thumbnail_path;
                     }
                 }
 
-                // Override Item Title with Custom Title
                 if (displayTitle) {
                     targetTitle = displayTitle;
                 }
 
-                // Select Thumbnail
+                // Select Thumbnail Logic
                 let selectedThumbnailPath = null;
-                if (allThumbnails.length > 0) {
-                    const randThumb = allThumbnails[Math.floor(Math.random() * allThumbnails.length)];
-                    selectedThumbnailPath = randThumb.filepath;
+                if (thumbnailMode === 'gallery' && galleryThumbnails.length > 0) {
+                    selectedThumbnailPath = galleryThumbnails[Math.floor(Math.random() * galleryThumbnails.length)].filepath;
+                } else if (thumbnailMode === 'video') {
+                    selectedThumbnailPath = contentThumbnailFallback;
+                } else {
+                    // 'auto' mode: Gallery preferred, Video fallback
+                    if (galleryThumbnails.length > 0) {
+                        selectedThumbnailPath = galleryThumbnails[Math.floor(Math.random() * galleryThumbnails.length)].filepath;
+                    } else {
+                        selectedThumbnailPath = contentThumbnailFallback;
+                    }
                 }
 
                 // Add Item to Rotation
                 await Rotation.addItem({
                     rotation_id: rotation.id,
-                    order_index: 0,
+                    order_index: i,
                     video_id: targetId,
                     title: targetTitle,
                     description: targetDesc,
                     tags: 'smart-rotation',
-                    privacy: 'public', // Default public? User asked for 24/7 radio usually public.
-                    category: '10', // Music
+                    privacy: privacy, // Dynamic privacy
+                    category: '10',
                     thumbnail_path: selectedThumbnailPath,
                     original_thumbnail_path: selectedThumbnailPath
                 });
 
                 generatedCount.push(rotation.id);
-                nextStartTime = new Date(streamEndTime.getTime() + 5 * 60000); // 5 min buffer
+                nextStartTime = new Date(streamEndTime.getTime() + 5 * 60000);
             }
         }
 

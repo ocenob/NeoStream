@@ -128,7 +128,8 @@
                             <span
                                 class="flex items-center text-green-400 text-xs font-medium bg-green-500/10 px-2 py-0.5 rounded-full">
                                 <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse mr-1.5"></span>
-                                Running ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Item <%= (rotation.current_index || 0) + 1 %>/<%= rotation.item_count %>
+                                Running ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Item <%= (rotation.current_index || 0) + 1 %>/<%=
+                                        rotation.item_count %>
                             </span>
                             <% } else if (rotation.status==='paused' ) { %>
                                 <span
@@ -591,6 +592,45 @@
                                 </select>
                             </div>
 
+                            <!-- Privacy Selector -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    YouTube Privacy
+                                </label>
+                                <select id="smartPrivacy"
+                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                                    <option value="public">Public</option>
+                                    <option value="unlisted" selected>Unlisted</option>
+                                    <option value="private">Private</option>
+                                </select>
+                            </div>
+
+                            <!-- Repeat Mode Selector -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    Repeat Mode
+                                </label>
+                                <select id="smartRepeatMode"
+                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                                    <option value="none" selected>Sekali Jalan (Once)</option>
+                                    <option value="daily">Harian (Daily)</option>
+                                    <option value="weekly">Mingguan (Weekly)</option>
+                                </select>
+                            </div>
+
+                            <!-- Thumbnail Mode Selector -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    Thumbnail Source
+                                </label>
+                                <select id="smartThumbnailMode"
+                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                                    <option value="auto" selected>Otomatis (Gallery > Video)</option>
+                                    <option value="gallery">Hanya dari Gallery</option>
+                                    <option value="video">Hanya dari Video/Playlist</option>
+                                </select>
+                            </div>
+
                         </div>
 
                         <!-- Footer -->
@@ -610,9 +650,9 @@
 
                 <script>
                     // Safe Data Initialization
-                    const videos = <%- JSON.stringify(videos || []).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/\//g, '\\/') %>;
-                    const playlists = <%- JSON.stringify(playlists || []).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/\//g, '\\/') %>;
-                    const thumbnails = <%- JSON.stringify(thumbnails || {}).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/\//g, '\\/') %>;
+                    const videos = <% - JSON.stringify(videos || []).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/\//g, '\\/') %>;
+                    const playlists = <% - JSON.stringify(playlists || []).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/\//g, '\\/') %>;
+                    const thumbnails = <% - JSON.stringify(thumbnails || {}).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/\//g, '\\/') %>;
                     const csrfToken = '<%= csrfToken %>';
                     let rotationItemCount = 0;
 
@@ -741,6 +781,9 @@
                         const minDailyHours = parseInt(document.getElementById('smartMinDailyHours').value) || 5;
                         const maxDailyHours = parseInt(document.getElementById('smartMaxDailyHours').value) || 10;
                         const contentType = document.getElementById('smartContentType').value;
+                        const privacy = document.getElementById('smartPrivacy').value;
+                        const repeatMode = document.getElementById('smartRepeatMode').value;
+                        const thumbnailMode = document.getElementById('smartThumbnailMode').value;
                         // repeatMode removed from UI
                         const rawTitlesInput = document.getElementById('smartCustomTitles');
                         const rawTitles = rawTitlesInput ? rawTitlesInput.value : '';
@@ -765,7 +808,10 @@
                                     minDailyHours,
                                     maxDailyHours,
                                     contentType,
-                                    customTitles
+                                    customTitles,
+                                    privacy,
+                                    repeatMode,
+                                    thumbnailMode
                                 })
                             });
                             const data = await res.json();

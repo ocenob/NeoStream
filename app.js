@@ -1144,7 +1144,9 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
     if (contentType === 'playlists') contentType = 'playlist';
 
     const customTitles = req.body.customTitles || [];
-    const repeatMode = req.body.repeatMode || 'once';
+    const repeatMode = req.body.repeatMode || 'none';
+    const privacy = req.body.privacy || 'public';
+    const thumbnailMode = req.body.thumbnailMode || 'auto';
 
     const Rotation = require('./models/Rotation');
     const YoutubeChannel = require('./models/YoutubeChannel');
@@ -1161,17 +1163,13 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
 
     const result = await AutoSchedulerService.generateRotations(channelId, userId, {
       daysCount,
-      minStreamsPerDay: minDailyHours, // Mapping "hours" variable name to "streams count"? 
-      // WAIT. The UI inputs are "Min Daily Hours" (e.g. 5 hours total?) OR "Min Streams"?
-      // Previous code: minDailyHours treated as COUNT in previous manual implementation? 
-      // Let's check: 
-      // user view: "Min Stream per Hari" (Count) -> id='smartMinDailyHours'
-      // user view: "Max Stream per Hari" (Count) -> id='smartMaxDailyHours'
-      // So the variable naming 'minDailyHours' in app.js was misleading, it holds the count.
       minStreamsPerDay: minDailyHours,
       maxStreamsPerDay: maxDailyHours,
-      contentType, // 'video' or 'playlist' (check values)
-      customTitles: customTitles // Need to parse from body
+      contentType,
+      customTitles: customTitles,
+      privacy,
+      repeatMode,
+      thumbnailMode
     });
 
     res.json({
