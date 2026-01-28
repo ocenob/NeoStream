@@ -610,9 +610,9 @@
 
                 <script>
                     // Safe Data Initialization
-                    const videos = \u003c%- JSON.stringify(videos || []).replace(/</g, '\\u003c') %>;
-                    const playlists = \u003c%- JSON.stringify(playlists || []).replace(/</g, '\\u003c') %>;
-                    const thumbnails = \u003c%- JSON.stringify(thumbnails || []).replace(/</g, '\\u003c') %>;
+                    const videos = \u003c% - JSON.stringify(videos || []).replace(/</g, '\\u003c') %>;
+                    const playlists = \u003c% - JSON.stringify(playlists || []).replace(/</g, '\\u003c') %>;
+                    const thumbnails = \u003c% - JSON.stringify(thumbnails || []).replace(/</g, '\\u003c') %>;
                     const csrfToken = '<%= csrfToken %>';
                     let rotationItemCount = 0;
 
@@ -1234,45 +1234,45 @@
                     window.stopRotation = async function (id) {
                         await fetch(`/api/rotations/${id}/stop`, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken } });
                         window.location.reload();
-                    }
+                    };
 
-                        // -- Bulk Delete Logic --
-                        (function () {
-                            function updateBtn() {
-                                const count = document.querySelectorAll('.rotation-checkbox:checked').length;
-                                const btn = document.getElementById('btnBulkDelete');
-                                const countSpan = document.getElementById('selectedCount');
-                                if (btn && countSpan) {
-                                    countSpan.textContent = count;
-                                    if (count > 0) btn.classList.remove('hidden');
-                                    else btn.classList.add('hidden');
-                                }
+                    // -- Bulk Delete Logic --
+                    (function () {
+                        function updateBtn() {
+                            const count = document.querySelectorAll('.rotation-checkbox:checked').length;
+                            const btn = document.getElementById('btnBulkDelete');
+                            const countSpan = document.getElementById('selectedCount');
+                            if (btn && countSpan) {
+                                countSpan.textContent = count;
+                                if (count > 0) btn.classList.remove('hidden');
+                                else btn.classList.add('hidden');
                             }
+                        }
 
-                            function initBulkDelete() {
-                                const selectAllCheckbox = document.getElementById('selectAllRotations');
-                                if (selectAllCheckbox) {
-                                    selectAllCheckbox.addEventListener('change', function () {
-                                        document.querySelectorAll('.rotation-checkbox').forEach(cb => cb.checked = this.checked);
-                                        updateBtn();
-                                    });
-                                }
-                                document.addEventListener('change', (e) => {
-                                    if (e.target.classList.contains('rotation-checkbox')) {
-                                        updateBtn();
-                                        if (selectAllCheckbox) {
-                                            const all = document.querySelectorAll('.rotation-checkbox').length;
-                                            const checked = document.querySelectorAll('.rotation-checkbox:checked').length;
-                                            selectAllCheckbox.checked = (all > 0 && all === checked);
-                                        }
-                                    }
+                        function initBulkDelete() {
+                            const selectAllCheckbox = document.getElementById('selectAllRotations');
+                            if (selectAllCheckbox) {
+                                selectAllCheckbox.addEventListener('change', function () {
+                                    document.querySelectorAll('.rotation-checkbox').forEach(cb => cb.checked = this.checked);
+                                    updateBtn();
                                 });
-                                updateBtn();
                             }
+                            document.addEventListener('change', (e) => {
+                                if (e.target.classList.contains('rotation-checkbox')) {
+                                    updateBtn();
+                                    if (selectAllCheckbox) {
+                                        const all = document.querySelectorAll('.rotation-checkbox').length;
+                                        const checked = document.querySelectorAll('.rotation-checkbox:checked').length;
+                                        selectAllCheckbox.checked = (all > 0 && all === checked);
+                                    }
+                                }
+                            });
+                            updateBtn();
+                        }
 
-                            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBulkDelete);
-                            else initBulkDelete();
-                        })();
+                        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initBulkDelete);
+                        else initBulkDelete();
+                    })();
 
                     window.bulkDeleteRotations = async function () {
                         const selected = Array.from(document.querySelectorAll('.rotation-checkbox:checked')).map(cb => cb.value);
