@@ -891,7 +891,7 @@
               
               <div class="flex gap-1 bg-dark-900 p-1 rounded-lg border border-gray-700 mb-4 w-fit">
                   <button type="button" onclick="switchItemModeV3(${idx}, 'video')" id="tab-video-${idx}" class="px-4 py-1.5 text-xs font-bold rounded-md tab-active transition-all">SINGLE VIDEO</button>
-                  <button type="button" onclick="switchItemModeV3(${idx}, 'playlist')" id="tab-playlist-${idx}" class="px-4 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-300 transition-all">PLAYLIST</button>
+                  <button type="button" onclick="switchItemModeV3(${idx}, 'playlist')" id="tab-playlist-${idx}" class="px-4 py-1.5 text-xs font-bold rounded-md text-gray-400 hover:text-gray-200 hover:bg-dark-700 transition-all">PLAYLIST</button>
               </div>
 
               <input type="hidden" name="items[${idx}][video_id]" class="video-id-input" required>
@@ -1021,7 +1021,7 @@
                         thumbnails.forEach(t => {
                             const displayUrl = t.filepath.startsWith('/') ? t.filepath : `/uploads/thumbnails/${t.filepath.split('/').pop()}`;
                             html += `
-                                <div class="relative aspect-video rounded-lg overflow-hidden border-2 border-transparent hover:border-amber-500/50 cursor-pointer group v2-selectable-card thumb-card-${idx}" 
+                                <div class="relative aspect-video rounded-lg overflow-hidden border-2 border-transparent hover:border-amber-500/50 cursor-pointer group v2-selectable-card thumb-card thumb-card-${idx}" 
                                      data-path="${t.filepath}"
                                      onclick="selectThumbnailForItemV3(${idx}, '${t.filepath.replace(/'/g, "\\'")}', this)">
                                     <img src="${displayUrl}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='/images/default-video-thumbnail.svg';">
@@ -1380,5 +1380,24 @@
                     .modal-container.active {
                         opacity: 1 !important;
                         transform: scale(1) translateY(0) !important;
+                    }
+
+                    .item-selected {
+                        border-color: #10b981 !important;
+                        /* Emerald 500 */
+                        background-color: rgba(16, 185, 129, 0.1) !important;
+                        box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+                    }
+
+                    .thumb-card[data-type="thumbnail"].item-selected {
+                        border-color: #f59e0b !important;
+                        /* Amber 500 */
+                        background-color: rgba(245, 158, 11, 0.1) !important;
+                        box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+                    }
+
+                    .tab-active {
+                        background-color: var(--primary-color, #3b82f6) !important;
+                        color: white !important;
                     }
                 </style>
