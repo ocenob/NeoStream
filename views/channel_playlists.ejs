@@ -20,8 +20,23 @@
                     <p class="text-gray-400 text-sm mt-1">Manage playlists for this channel</p>
                 </div>
                 <div>
+                    <div id="bulkActions"
+                        class="hidden inline-flex items-center gap-2 mr-2 bg-dark-700 px-3 py-1.5 rounded-lg border border-gray-600">
+                        <span class="text-xs text-gray-300"><span id="selectedCount">0</span> selected</span>
+                        <button onclick="bulkDeletePlaylists()"
+                            class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 py-1.5 rounded-md transition-colors border border-red-500/30">
+                            <i class="ti ti-trash mr-1"></i>Delete
+                        </button>
+                    </div>
+
+                    <button onclick="toggleSelectAll()" id="selectAllBtn"
+                        class="flex items-center gap-2 bg-dark-700 hover:bg-dark-600 text-gray-300 px-4 py-2 rounded-lg transition-colors border border-gray-600 mr-2 inline-flex">
+                        <i class="ti ti-checkbox"></i>
+                        <span>Select All</span>
+                    </button>
+
                     <button onclick="openBulkGenerateModal()"
-                        class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-4 py-2 rounded-lg transition-colors shadow-lg shadow-purple-500/20 mr-2">
+                        class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-4 py-2 rounded-lg transition-colors shadow-lg shadow-purple-500/20 mr-2 inline-flex">
                         <i class="ti ti-wand"></i>
                         <span class="hidden sm:inline">Bulk Auto-Gen</span>
                     </button>
@@ -97,10 +112,18 @@
                                         <i class="ti ti-edit text-gray-400 hover:text-white text-sm"></i>
                                     </button>
                                     <button class="p-1 hover:bg-dark-700 rounded transition-colors"
-                                        onclick="deletePlaylist('<%= playlist.id %>')" title="Delete">
+                                        onclick="deletePlaylist('<%= playlist.id %>', '<%= playlist.name %>')"
+                                        title="Delete">
                                         <i class="ti ti-trash text-gray-400 hover:text-red-400 text-sm"></i>
                                     </button>
                                 </div>
+                            </div>
+
+                            <!-- Selection Checkbox -->
+                            <div class="absolute top-2 right-2 z-10">
+                                <input type="checkbox" value="<%= playlist.id %>"
+                                    class="playlist-checkbox w-5 h-5 rounded border-gray-600 text-primary focus:ring-primary bg-gray-700 cursor-pointer"
+                                    onclick="event.stopPropagation(); updateBulkActions();">
                             </div>
                         </div>
                         <% }); %>
@@ -484,11 +507,98 @@
 
             <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
             <script>
+                function showToast(message, type = 'info') {
+                    const toast = document.createElement('div');
+                    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white transform transition-all duration-300 translate-y-full z-[60] ${type === 'success' ? 'bg-green-600' :
+                            type === 'error' ? 'bg-red-600' :
+                                'bg-blue-600'
+                        }`;
+                    toast.innerHTML = `
+        <div class="flex items-center gap-2">
+          <i class="ti ti-${type === 'success' ? 'check' : type === 'error' ? 'alert-circle' : 'info-circle'}"></i>
+          <span>${message}</span>
+        </div>
+      `;
+                    document.body.appendChild(toast);
+                    requestAnimationFrame(() => toast.classList.remove('translate-y-full'));
+                    setTimeout(() => {
+                        toast.classList.add('translate-y-full', 'opacity-0');
+                        setTimeout(() => toast.remove(), 300);
+                    }, 3000);
+                }
+
+                // Bulk Delete Logic
+                function updateBulkActions() {
+                    const checkboxes = document.querySelectorAll('.playlist-checkbox:checked');
+                    const count = checkboxes.length;
+                    document.getElementById('selectedCount').textContent = count;
+
+                    const bulkActions = document.getElementById('bulkActions');
+                    if (count > 0) {
+                        bulkActions.classList.remove('hidden');
+                    } else {
+                        bulkActions.classList.add('hidden');
+                    }
+
+                    // Update Select All button state
+                    const allCheckboxes = document.querySelectorAll('.playlist-checkbox');
+                    const selectAllBtn = document.getElementById('selectAllBtn');
+                    if (count === allCheckboxes.length && count > 0) {
+                        selectAllBtn.classList.add('bg-primary/20', 'text-primary', 'border-primary');
+                        selectAllBtn.innerHTML = '<i class="ti ti-checkbox"></i><span>Deselect All</span>';
+                    } else {
+                        selectAllBtn.classList.remove('bg-primary/20', 'text-primary', 'border-primary');
+                        selectAllBtn.innerHTML = '<i class="ti ti-checkbox"></i><span>Select All</span>';
+                    }
+                }
+
+                function toggleSelectAll() {
+                    const checkboxes = document.querySelectorAll('.playlist-checkbox');
+                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+                    checkboxes.forEach(cb => cb.checked = !allChecked);
+                    updateBulkActions();
+                }
+
+                async function bulkDeletePlaylists() {
+                    const checkboxes = document.querySelectorAll('.playlist-checkbox:checked');
+                    const ids = Array.from(checkboxes).map(cb => cb.value);
+
+                    if (ids.length === 0) return;
+
+                    if (await showConfirm(`Are you sure you want to delete ${ids.length} playlists? This action cannot be undone.`)) {
+                        try {
+                            const response = await fetch('/api/playlists/bulk-delete', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ ids })
+                            });
+
+                            const data = await response.json();
+                            if (data.success) {
+                                showToast(data.message || 'Playlists deleted successfully', 'success');
+                                setTimeout(() => location.reload(), 1000);
+                            } else {
+                                showToast(data.error || 'Failed to delete playlists', 'error');
+                            }
+                        } catch (error) {
+                            console.error('Bulk delete error:', error);
+                            showToast('An error occurred', 'error');
+                        }
+                    }
+                }
+
+                function showConfirm(message) {
+                    return new Promise(resolve => {
+                        const confirmed = confirm(message);
+                        resolve(confirmed);
+                    });
+                }
                 let selectedVideos = [];
                 let selectedAudios = [];
                 let currentPlaylistId = null;
-                let allVideos = <%- JSON.stringify(videos || []) %>;
-                let allAudios = <%- JSON.stringify(audios || []) %>;
+                let allVideos = <% - JSON.stringify(videos || []) %>;
+                let allAudios = <% - JSON.stringify(audios || []) %>;
                 let currentTab = 'videos';
 
                 function switchTab(tab) {
