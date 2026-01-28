@@ -152,6 +152,10 @@
                                                     class="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <% const deleteId=file.id; const deleteTitle=file.title ||
                                                         file.filename; %>
+                                                        <button class="text-gray-400 hover:text-blue-400 p-1"
+                                                            onclick="event.stopPropagation(); renameFile('<%= deleteId %>', '<%= deleteTitle %>')">
+                                                            <i class="ti ti-pencil text-sm"></i>
+                                                        </button>
                                                         <button class="text-gray-400 hover:text-red-400 p-1"
                                                             onclick="event.stopPropagation(); deleteFile('<%= deleteId %>', '<%= deleteTitle %>')">
                                                             <i class="ti ti-trash text-sm"></i>
@@ -828,6 +832,30 @@
     </div>
   `;
                         document.body.insertAdjacentHTML('beforeend', modalHTML);
+                    }
+
+                    window.renameFile = async function (id, currentTitle) {
+                        const newTitle = prompt('Enter new name:', currentTitle);
+                        if (!newTitle || newTitle === currentTitle) return;
+
+                        try {
+                            const endpoint = mediaType === 'image' ? `/api/thumbnails/${id}/rename` : `/api/videos/${id}/rename`;
+                            const res = await fetch(endpoint, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ title: newTitle })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                await window.showToast('success', 'Renamed successfully');
+                                setTimeout(() => location.reload(), 500);
+                            } else {
+                                await window.showToast('error', data.error || 'Failed to rename');
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            await window.showToast('error', 'Error occurred');
+                        }
                     }
 
                     window.deleteFile = async function (id, title) {

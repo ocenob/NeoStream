@@ -82,6 +82,22 @@ class Thumbnail {
             }).catch(reject);
         });
     }
+    static update(id, data) {
+        const fields = [];
+        const values = [];
+        Object.entries(data).forEach(([key, value]) => {
+            fields.push(`${key} = ?`);
+            values.push(value);
+        });
+        values.push(id);
+        const query = `UPDATE thumbnails SET ${fields.join(', ')} WHERE id = ?`;
+        return new Promise((resolve, reject) => {
+            db.run(query, values, function (err) {
+                if (err) return reject(err);
+                resolve({ id, ...data });
+            });
+        });
+    }
 }
 
 module.exports = Thumbnail;

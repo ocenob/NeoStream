@@ -5779,3 +5779,43 @@ process.on('unhandledRejection', async (reason, promise) => {
   rotationService.shutdown();
   process.exit(1);
 });// Force Restart 01/18/2026 23:41:16
+// Rename Video/Audio
+app.put('/api/videos/:id/rename', isAuthenticated, [
+  body('title').trim().isLength({ min: 1 }).withMessage('Title is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ success: false, error: errors.array()[0].msg });
+
+    const video = await Video.findById(req.params.id);
+    if (!video) return res.status(404).json({ success: false, error: 'File not found' });
+    if (video.user_id !== req.session.userId) return res.status(403).json({ success: false, error: 'Unauthorized' });
+
+    await Video.update(req.params.id, { title: req.body.title });
+    res.json({ success: true, message: 'File renamed successfully' });
+  } catch (error) {
+    console.error('Error renaming file:', error);
+    res.status(500).json({ success: false, error: 'Failed to rename file' });
+  }
+});
+
+// Rename Thumbnail
+app.put('/api/thumbnails/:id/rename', isAuthenticated, [
+  body('title').trim().isLength({ min: 1 }).withMessage('Title is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ success: false, error: errors.array()[0].msg });
+
+    const Thumbnail = require('./models/Thumbnail');
+    const thumb = await Thumbnail.findById(req.params.id);
+    if (!thumb) return res.status(404).json({ success: false, error: 'Thumbnail not found' });
+    if (thumb.user_id !== req.session.userId) return res.status(403).json({ success: false, error: 'Unauthorized' });
+
+    await Thumbnail.update(req.params.id, { title: req.body.title });
+    res.json({ success: true, message: 'Thumbnail renamed successfully' });
+  } catch (error) {
+    console.error('Error renaming thumbnail:', error);
+    res.status(500).json({ success: false, error: 'Failed to rename thumbnail' });
+  }
+});
