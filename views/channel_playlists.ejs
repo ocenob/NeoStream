@@ -55,7 +55,7 @@
                         const displayThumbnails = thumbnails.slice(0, 4);
                         %>
                         <div
-                            class="bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow playlist-card flex flex-col">
+                            class="relative bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow playlist-card flex flex-col">
                             <div class="p-4 flex-1">
                                 <h3 class="font-semibold text-md truncate mb-3">
                                     <%= playlist.name %>
@@ -510,8 +510,8 @@
                 function showToast(message, type = 'info') {
                     const toast = document.createElement('div');
                     toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white transform transition-all duration-300 translate-y-full z-[60] ${type === 'success' ? 'bg-green-600' :
-                            type === 'error' ? 'bg-red-600' :
-                                'bg-blue-600'
+                        type === 'error' ? 'bg-red-600' :
+                            'bg-blue-600'
                         }`;
                     toast.innerHTML = `
         <div class="flex items-center gap-2">
