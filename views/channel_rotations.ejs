@@ -648,15 +648,9 @@
                 </div>
 
 
-                <div id="v_data" style="display:none text-indent: -9999px;">
-                    <%= JSON.stringify(videos || []) %>
-                </div>
-                <div id="p_data" style="display:none text-indent: -9999px;">
-                    <%= JSON.stringify(playlists || []) %>
-                </div>
-                <div id="t_data" style="display:none text-indent: -9999px;">
-                    <%= JSON.stringify(thumbnails || {}) %>
-                </div>
+                <script type="application/json" id="v_data"><%- JSON.stringify(videos || []) %></script>
+                <script type="application/json" id="p_data"><%- JSON.stringify(playlists || []) %></script>
+                <script type="application/json" id="t_data"><%- JSON.stringify(thumbnails || {}) %></script>
                 <script>
                     const videos = JSON.parse(document.getElementById('v_data').textContent);
                     const playlists = JSON.parse(document.getElementById('p_data').textContent);
