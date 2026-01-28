@@ -5044,6 +5044,29 @@ app.put('/api/playlists/:id', isAuthenticated, [
   }
 });
 
+app.post('/api/playlists/bulk-delete', isAuthenticated, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'No playlists specified' });
+    }
+
+    let deletedCount = 0;
+    for (const id of ids) {
+      const playlist = await Playlist.findById(id);
+      if (playlist && playlist.user_id === req.session.userId) {
+        await Playlist.delete(id);
+        deletedCount++;
+      }
+    }
+
+    res.json({ success: true, message: `${deletedCount} playlists deleted successfully` });
+  } catch (error) {
+    console.error('Error batch deleting playlists:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete playlists' });
+  }
+});
+
 app.delete('/api/playlists/:id', isAuthenticated, async (req, res) => {
   try {
     const playlist = await Playlist.findById(req.params.id);

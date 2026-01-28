@@ -329,7 +329,10 @@ async function buildFFmpegArgsForPlaylist(stream, playlist) {
       '-map', '1:a:0',
 
       '-c:v', 'copy',
-      '-c:a', 'copy',
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-ar', '44100',
+      '-ac', '2',
 
       '-f', 'flv',
       '-flvflags', 'no_duration_filesize',

@@ -13,10 +13,17 @@ db.all("SELECT name FROM sqlite_master WHERE type='table'", [], (err, tables) =>
     console.log('Tables:', tables.map(t => t.name).join(', '));
 
     if (tables.find(t => t.name === 'stream_rotations')) {
-        db.all('SELECT * FROM stream_rotations', [], (err, rows) => {
+        db.all("SELECT * FROM stream_rotations", [], (err, rows) => {
             if (err) console.error(err);
             console.log('Rotations:', JSON.stringify(rows, null, 2));
-            db.close();
+
+            // Check playlist audios
+            db.all("SELECT * FROM playlist_audios", [], (err, audios) => {
+                if (err) console.error(err);
+                console.log('Playlist Audios:', JSON.stringify(audios, null, 2));
+                db.close();
+            });
+
         });
     } else {
         console.log('Table stream_rotations NOT FOUND');
