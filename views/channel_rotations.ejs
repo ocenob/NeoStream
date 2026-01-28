@@ -666,8 +666,8 @@
                         const clockEl = document.getElementById('server-clock');
                         if (clockEl) el.textContent = `Server: ${clockEl.textContent}`;
                     }
-                    // setInterval(updateRotationServerTime, 1000); // PERMANENTLY REMOVED
-                    console.log("DEBUG: channel_rotations.ejs loaded - Interval disabled");
+                    setInterval(updateRotationServerTime, 1000);
+                    console.log("DEBUG: channel_rotations.ejs loaded - Server clock sync enabled");
 
                     // -- Duration --
                     window.calculateDuration = function () {
@@ -731,6 +731,7 @@
                         document.getElementById('rotationId').value = '';
                         document.getElementById('rotationChannelId').value = '<%= channel.id %>'; // Ensure ID is persistent
                         document.getElementById('rotationDurationBadge').textContent = 'Duration: 00:00';
+                        updateRotationServerTime();
 
                         document.getElementById('rotationItemsContainer').innerHTML = '';
                         rotationItemCount = 0;

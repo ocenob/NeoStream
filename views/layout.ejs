@@ -109,11 +109,11 @@
           <span class="text-xs mt-1">Streams</span>
           <span class="sidebar-tooltip group-hover:scale-100">Stream Manager</span>
         </a>
-        <a href="/rotations" class="sidebar-icon group <%= active === 'rotations' ? 'bg-primary' : '' %>">
+        <!-- <a href="/rotations" class="sidebar-icon group <%= active === 'rotations' ? 'bg-primary' : '' %>">
           <i class="ti ti-rotate text-xl"></i>
           <span class="text-xs mt-1">Rotations</span>
           <span class="sidebar-tooltip group-hover:scale-100">Stream Rotations</span>
-        </a>
+        </a> -->
         <a href="/gallery" class="sidebar-icon group <%= active === 'gallery' ? 'bg-primary' : '' %>">
           <i class="ti ti-video text-xl"></i>
           <span class="text-xs mt-1">Gallery</span>
@@ -124,11 +124,11 @@
           <span class="text-xs mt-1">Playlist</span>
           <span class="sidebar-tooltip group-hover:scale-100">Playlist Manager</span>
         </a>
-        <a href="/history" class="sidebar-icon group <%= active === 'history' ? 'bg-primary' : '' %>">
+        <!-- <a href="/history" class="sidebar-icon group <%= active === 'history' ? 'bg-primary' : '' %>">
           <i class="ti ti-history text-xl"></i>
           <span class="text-xs mt-1">History</span>
           <span class="sidebar-tooltip group-hover:scale-100">Stream History</span>
-        </a>
+        </a> -->
         <% if (req.session && req.session.user_role==='admin' ) { %>
           <a href="/users" class="sidebar-icon group <%= active === 'users' ? 'bg-primary' : '' %>">
             <i class="ti ti-users text-xl"></i>
@@ -249,10 +249,10 @@
         <i class="ti ti-broadcast"></i>
         <span>Streams</span>
       </a>
-      <a href="/rotations" class="bottom-nav-item <%= active === 'rotations' ? 'bottom-nav-active' : '' %>">
+      <!-- <a href="/rotations" class="bottom-nav-item <%= active === 'rotations' ? 'bottom-nav-active' : '' %>">
         <i class="ti ti-rotate"></i>
         <span>Rotations</span>
-      </a>
+      </a> -->
       <a href="/gallery" class="bottom-nav-item <%= active === 'gallery' ? 'bottom-nav-active' : '' %>">
         <i class="ti ti-video"></i>
         <span>Gallery</span>
