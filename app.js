@@ -865,7 +865,7 @@ app.get('/gallery', isAuthenticated, async (req, res) => {
       title: 'Video Gallery',
       active: 'gallery',
       user: user,
-      files: validVideos,
+      videos: validVideos,
       mediaType: 'video'
     });
   } catch (error) {
