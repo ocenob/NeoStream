@@ -246,11 +246,11 @@ class AutoSchedulerService {
             }
 
             itemsToAdd.push({
-                video_id: video.id,
+                video_id: `playlist:${sourcePlaylistId}`, // FORCE PLAYLIST TYPE (Visual Compliance)
                 title: title,
                 description: video.description || '',
                 thumbnail_path: thumbPath,
-                duration: video.duration || 300 // fallback 5 min
+                duration: video.duration || 300 // Use video duration but point to playlist
             });
 
             accumulatedDuration += (video.duration || 300);
