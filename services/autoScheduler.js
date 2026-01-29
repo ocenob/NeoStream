@@ -207,12 +207,18 @@ class AutoSchedulerService {
         const seedPlaylistName = allPlaylists.find(p => p.id == sourcePlaylistId)?.name || allPlaylists[0].name;
         const rotationName = `Smart - ${startTime} (${durationHours}h) - ${seedPlaylistName} Mix`;
 
+        // Helper to format Date to Local ISO String (YYYY-MM-DDTHH:mm:ss)
+        const toLocalISO = (date) => {
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        };
+
         const rotation = await Rotation.create({
             user_id: userId,
             name: rotationName,
             youtube_channel_id: channelId,
-            start_time: streamStartTime.toISOString().replace('Z', ''),
-            end_time: streamEndTime.toISOString().replace('Z', ''),
+            start_time: toLocalISO(streamStartTime),
+            end_time: toLocalISO(streamEndTime),
             repeat_mode: repeatMode,
             status: 'active',
             is_loop: true,
@@ -302,9 +308,9 @@ class AutoSchedulerService {
         if (useItemCountMode) {
             const newEndTime = new Date(streamStartTime.getTime() + accumulatedDuration * 1000);
             await Rotation.update(rotation.id, {
-                end_time: newEndTime.toISOString().replace('Z', '')
+                end_time: toLocalISO(newEndTime)
             });
-            console.log(`[Auto] Updated Rotation End Time to ${newEndTime.toISOString()} (Total Items: ${itemsToAdd.length})`);
+            console.log(`[Auto] Updated Rotation End Time to ${toLocalISO(newEndTime)} (Total Items: ${itemsToAdd.length})`);
         }
 
         // 6. Bulk Add Items to Rotation
