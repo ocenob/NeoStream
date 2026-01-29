@@ -333,7 +333,7 @@ class AutoSchedulerService {
         // 3. Setup Timing
         const now = new Date();
         const [hours, minutes] = startTime.split(':').map(Number);
-        const streamStartTime = new Date(now);
+        let streamStartTime = new Date(now);
         if (config.startDateOverride) {
             streamStartTime = new Date(config.startDateOverride);
             // Ensure time part matches startTime just in case, though override usually has it
