@@ -163,6 +163,8 @@ class AutoSchedulerService {
         const {
             startTime = "10:00",
             durationHours = 7,
+            minDurationHours = 3, // Default if not provided
+            maxDurationHours = 7, // Default if not provided
             sourcePlaylistId = null,
             customTitles = [],
             privacy = 'unlisted',
@@ -226,9 +228,11 @@ class AutoSchedulerService {
             // Fetch playlist details
             const fullRandomPlaylist = await Playlist.findByIdWithVideos(randomPlaylistMeta.id);
 
-            // 5a. GENERATE RANDOM DURATION TARGET (User Request: 3-7 hours)
-            let minDur = 3 * 3600; // 3h
-            let maxDur = 7 * 3600; // 7h
+            // 5a. GENERATE RANDOM DURATION TARGET (Dynamic User Range)
+            let minDur = parseFloat(minDurationHours) * 3600;
+            let maxDur = parseFloat(maxDurationHours) * 3600;
+            if (isNaN(minDur)) minDur = 3 * 3600;
+            if (isNaN(maxDur)) maxDur = 7 * 3600;
 
             // Random offset for uniqueness (seconds)
             let randomOffset = Math.floor(Math.random() * 600); // 0-10m variance
