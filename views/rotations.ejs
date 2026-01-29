@@ -7,6 +7,11 @@
       <span>Delete (<span id="selectedCount">0</span>)</span>
     </button>
     <% if (youtubeConnected) { %>
+      <button onclick="openSmartScheduleModal()"
+        class="w-full md:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-purple-500/20">
+        <i class="ti ti-wand"></i>
+        <span>Smart Schedule</span>
+      </button>
       <button onclick="openCreateRotationModal()"
         class="w-full md:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
         <i class="ti ti-plus"></i>
@@ -516,6 +521,223 @@
                 </div>
               </div>
 
+              <!-- Smart Schedule Modal -->
+              <div id="smartScheduleModal"
+                class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden modal-overlay overflow-y-auto">
+                <div class="flex min-h-screen items-center justify-center p-4">
+                  <div
+                    class="bg-dark-800 rounded-xl shadow-2xl w-full max-w-2xl modal-container border border-gray-700/50">
+                    <div class="flex items-center justify-between p-6 border-b border-gray-700">
+                      <div>
+                        <h3
+                          class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
+                          Smart Schedule Generator</h3>
+                        <p class="text-xs text-gray-400 mt-1">Automatically generate randomized daily streaming
+                          schedules</p>
+                      </div>
+                      <button onclick="closeSmartScheduleModal()"
+                        class="text-gray-400 hover:text-white transition-colors">
+                        <i class="ti ti-x text-xl"></i>
+                      </button>
+                    </div>
+
+                    <div class="p-6 space-y-6">
+                      <form id="smartScheduleForm" class="space-y-6">
+                        <!-- Source Selection -->
+                        <div class="bg-dark-700/50 p-4 rounded-lg border border-gray-700">
+                          <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                            <i class="ti ti-database text-purple-400"></i> Content Source
+                          </h4>
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label class="text-xs text-gray-400 block mb-1.5">Source Type</label>
+                              <select id="smartSourceType" name="sourceType" onchange="toggleSmartSource()"
+                                class="w-full px-3 py-2 bg-dark-800 border border-gray-600 rounded-lg text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
+                                <option value="playlist">From Playlist</option>
+                                <option value="all">All Videos (Random)</option>
+                              </select>
+                            </div>
+                            <div id="smartPlaylistSelector">
+                              <label class="text-xs text-gray-400 block mb-1.5">Select Playlist</label>
+                              <select id="smartSourcePlaylist" name="sourcePlaylistId"
+                                class="w-full px-3 py-2 bg-dark-800 border border-gray-600 rounded-lg text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
+                                <% if (playlists && playlists.length> 0) { %>
+                                  <% playlists.forEach(p=> { %>
+                                    <option value="<%= p.id %>">
+                                      <%= p.name %> (<%= p.video_count %> videos)
+                                    </option>
+                                    <% }); %>
+                                      <% } else { %>
+                                        <option value="" disabled selected>No playlists available</option>
+                                        <% } %>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Schedule Parameters -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                              <i class="ti ti-calendar-time text-blue-400"></i> Daily Schedule
+                            </h4>
+                            <div class="space-y-3">
+                              <div>
+                                <label class="text-xs text-gray-400 block mb-1">Items Per Day (Min - Max)</label>
+                                <div class="flex items-center gap-2">
+                                  <input type="number" name="minStreams" value="6" min="1" max="24"
+                                    class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm text-center">
+                                  <span class="text-gray-500">-</span>
+                                  <input type="number" name="maxStreams" value="12" min="1" max="24"
+                                    class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm text-center">
+                                </div>
+                              </div>
+                              <div>
+                                <label class="text-xs text-gray-400 block mb-1">Duration Hours (Min - Max)</label>
+                                <div class="flex items-center gap-2">
+                                  <input type="number" name="minDuration" value="3" min="1" max="24"
+                                    class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm text-center">
+                                  <span class="text-gray-500">-</span>
+                                  <input type="number" name="maxDuration" value="8" min="1" max="24"
+                                    class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm text-center">
+                                </div>
+                              </div>
+                              <div>
+                                <label class="text-xs text-gray-400 block mb-1">Generate For (Days)</label>
+                                <select name="daysCount"
+                                  class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm">
+                                  <option value="7">Next 7 Days</option>
+                                  <option value="14" selected>Next 14 Days</option>
+                                  <option value="30">Next 30 Days</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                              <i class="ti ti-settings text-green-400"></i> Metadata
+                            </h4>
+                            <div class="space-y-3">
+                              <div>
+                                <label class="text-xs text-gray-400 block mb-1">Thumbnails</label>
+                                <select name="thumbnailMode"
+                                  class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm">
+                                  <option value="auto">Auto (Random Gallery)</option>
+                                  <option value="video">Original Video Thumbnail</option>
+                                  <option value="gallery">Random From Gallery Only</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label class="text-xs text-gray-400 block mb-1">Privacy</label>
+                                <select name="privacy"
+                                  class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm">
+                                  <option value="public">Public</option>
+                                  <option value="unlisted" selected>Unlisted</option>
+                                  <option value="private">Private</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label class="text-xs text-gray-400 block mb-1">Custom Titles (Optional)</label>
+                                <textarea name="customTitles" rows="4"
+                                  placeholder="Enter one title per line...&#10;Chill Vibes 2026&#10;Best Gaming Moments"
+                                  class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-xs leading-relaxed resize-none"></textarea>
+                                <p class="text-[10px] text-gray-500 mt-1">If provided, titles will be picked randomly
+                                  from this list.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-700 bg-dark-800/50">
+                      <button onclick="closeSmartScheduleModal()"
+                        class="px-5 py-2.5 text-sm font-medium text-gray-300 hover:text-white transition-colors">Cancel</button>
+                      <button onclick="generateSmartSchedule()"
+                        class="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg shadow-lg shadow-purple-500/20 transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2">
+                        <i class="ti ti-wand"></i> Generate Schedule
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <script>
+                function openSmartScheduleModal() {
+                  const modal = document.getElementById('smartScheduleModal');
+                  modal.classList.remove('hidden');
+                  document.body.style.overflow = 'hidden';
+                }
+
+                function closeSmartScheduleModal() {
+                  const modal = document.getElementById('smartScheduleModal');
+                  modal.classList.add('hidden');
+                  document.body.style.overflow = '';
+                }
+
+                function toggleSmartSource() {
+                  const type = document.getElementById('smartSourceType').value;
+                  const playlistSelector = document.getElementById('smartPlaylistSelector');
+                  if (type === 'playlist') {
+                    playlistSelector.classList.remove('opacity-50', 'pointer-events-none');
+                  } else {
+                    playlistSelector.classList.add('opacity-50', 'pointer-events-none');
+                  }
+                }
+
+                async function generateSmartSchedule() {
+                  const form = document.getElementById('smartScheduleForm');
+                  const btn = document.querySelector('#smartScheduleModal button[onclick="generateSmartSchedule()"]');
+                  const originalText = btn.innerHTML;
+
+                  // Collect Data
+                  const formData = new FormData(form);
+                  const data = {
+                    sourceType: formData.get('sourceType'),
+                    sourcePlaylistId: formData.get('sourcePlaylistId'),
+                    minStreams: formData.get('minStreams'),
+                    maxStreams: formData.get('maxStreams'),
+                    minDuration: formData.get('minDuration'),
+                    maxDuration: formData.get('maxDuration'),
+                    daysCount: formData.get('daysCount'),
+                    thumbnailMode: formData.get('thumbnailMode'),
+                    privacy: formData.get('privacy'),
+                    customTitles: formData.get('customTitles').split('\n').map(t => t.trim()).filter(t => t)
+                  };
+
+                  const channelId = document.getElementById('rotationChannelId').value;
+                  if (!channelId) return showToast('error', 'No YouTube channel selected');
+
+                  btn.disabled = true;
+                  btn.innerHTML = '<i class="ti ti-loader animate-spin"></i> Generating...';
+
+                  try {
+                    const res = await fetch(`/api/channels/${channelId}/generate-smart-rotation`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(data)
+                    });
+                    const result = await res.json();
+
+                    if (result.success) {
+                      showToast('success', result.message);
+                      closeSmartScheduleModal();
+                      setTimeout(() => location.reload(), 1000);
+                    } else {
+                      showToast('error', result.error);
+                      btn.disabled = false;
+                      btn.innerHTML = originalText;
+                    }
+                  } catch (e) {
+                    console.error(e);
+                    showToast('error', 'Failed to generate schedule');
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                  }
+                }
+              </script>
+
               <div id="toast"
                 class="fixed top-16 right-4 bg-dark-800 text-white px-4 py-3 rounded-lg shadow-lg z-50 hidden flex items-center border-l-4">
                 <i id="toast-icon" class="mr-2"></i>
@@ -587,8 +809,8 @@
               </style>
 
               <script>
-                const videos = <%- JSON.stringify(videos).replace(/</g, '\\u003c') %>;
-                const playlists = <%- JSON.stringify(playlists || []).replace(/</g, '\\u003c') %>;
+                const videos = <% - JSON.stringify(videos).replace(/</g, '\\u003c') %>;
+                const playlists = <% - JSON.stringify(playlists || []).replace(/</g, '\\u003c') %>;
                 const csrfToken = '<%= csrfToken %>';
                 let rotationItemCount = 0;
 

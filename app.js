@@ -5174,19 +5174,22 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
 
     const config = {
       daysCount: parseInt(req.body.daysCount) || 14,
-      minStreamsPerDay: parseInt(req.body.minDailyHours) || 6, // UI sends 'minDailyHours'
-      maxStreamsPerDay: parseInt(req.body.maxDailyHours) || 12, // UI sends 'maxDailyHours'
-      contentType: req.body.contentType || 'video',
-      customTitles: req.body.customTitles || [], // Array from UI
-      minDurationHours: 3,
-      maxDurationHours: 7
+      minStreamsPerDay: parseInt(req.body.minStreams) || 6,
+      maxStreamsPerDay: parseInt(req.body.maxStreams) || 12,
+      minDurationHours: parseInt(req.body.minDuration) || 3,
+      maxDurationHours: parseInt(req.body.maxDuration) || 8,
+      contentType: req.body.sourceType === 'playlist' ? 'playlist' : 'video',
+      sourcePlaylistId: req.body.sourcePlaylistId || null,
+      customTitles: req.body.customTitles || [],
+      thumbnailMode: req.body.thumbnailMode || 'auto',
+      privacy: req.body.privacy || 'unlisted'
     };
 
-    // Set timeout to 5 minutes for long generation
+    // Set timeout to 5 minutes
     req.setTimeout(300000);
 
-    const result = await AutoSchedulerService.generateRotationSchedule(channelId, userId, config);
-    res.json(result);
+    const result = await AutoSchedulerService.generateRotations(channelId, userId, config);
+    res.json({ success: true, message: `Successfully generated ${result.count} smart rotations` });
 
   } catch (error) {
     console.error('Error generating smart rotation:', error);

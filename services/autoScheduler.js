@@ -163,26 +163,51 @@ class AutoSchedulerService {
         console.log('[AutoScheduler] Starting ROTATION generation with config:', config);
         const {
             daysCount = 14,
-            minStreamsPerDay = 5,
-            maxStreamsPerDay = 10,
+            minStreamsPerDay = 6,
+            maxStreamsPerDay = 12,
+            minDurationHours = 3,
+            maxDurationHours = 8,
             contentType = 'video',
+            sourcePlaylistId = null,
             customTitles = [],
-            privacy = 'public',
+            privacy = 'unlisted',
             repeatMode = 'none',
             thumbnailMode = 'auto' // auto | gallery | video
         } = config;
 
         // 1. Fetch Content Pool
         let contentPool = [];
-        if (contentType === 'playlist') {
+        if (sourcePlaylistId) {
+            // Source from Specific Playlist
+            const playlist = await Playlist.findByIdWithVideos(sourcePlaylistId);
+            if (!playlist) throw new Error('Source playlist not found');
+
+            // Filter out audio-only if needed, or keep them if mixed.
+            // For streams, we usually want videos.
+            contentPool = playlist.videos || [];
+
+            // Filter out missing files if possible?
+            // Assuming playlist.videos have full video objects. 
+            // The query returns `v.*`, so yes.
+        } else if (contentType === 'playlist') {
+            // Fallback to old behavior: Random Playlist Selection
+            // (We might not use this via the new UI, but keeping for compatibility)
             contentPool = await Playlist.findAll(userId, channelId);
             contentPool = contentPool.filter(p => p.video_count > 0);
         } else {
+            // All Videos
             contentPool = await Video.findAll(userId, channelId);
+            // Filter out audio
+            contentPool = contentPool.filter(v =>
+                !v.filepath.includes('/audio/') &&
+                !v.filepath.endsWith('.mp3') &&
+                !v.filepath.endsWith('.m4a') &&
+                !v.filepath.endsWith('.aac')
+            );
         }
 
         if (contentPool.length === 0) {
-            throw new Error(`No ${contentType}s found for this channel.`);
+            throw new Error(`No valid content found for the selected source.`);
         }
 
         // 2. Fetch Thumbnail Pool (Gallery)
@@ -211,7 +236,7 @@ class AutoSchedulerService {
             let nextStartTime = new Date(currentDayStart);
 
             for (let i = 0; i < streamsToday; i++) {
-                const durationHours = (Math.random() * (7 - 3) + 3);
+                const durationHours = (Math.random() * (maxDurationHours - minDurationHours) + minDurationHours);
                 const durationSeconds = Math.floor(durationHours * 3600);
 
                 const streamStartTime = new Date(nextStartTime);
@@ -243,28 +268,50 @@ class AutoSchedulerService {
                 let targetDesc = '';
                 let contentThumbnailFallback = null;
 
-                if (contentType === 'playlist') {
+                if (contentType === 'playlist' && !sourcePlaylistId) {
+                    // Legacy: Pick a random playlist as the content
                     const pl = contentPool[Math.floor(Math.random() * contentPool.length)];
                     targetId = `playlist:${pl.id}`;
                     targetTitle = pl.name;
                     targetDesc = pl.description || '';
-                    // Fallback to first video thumbnail if playlist thumbnails available
                     if (pl.thumbnails) {
                         contentThumbnailFallback = pl.thumbnails.split(',')[0];
                     }
                 } else {
+                    // Video Source (Either from 'sourcePlaylistId' videos OR 'All Videos')
+                    // We need to pick enough videos to fill the duration?
+                    // User request: "video dari playlist" (videos from playlist).
+                    // If we pick just ONE video, it might loop.
+                    // If we want a "Rotation Item" to be a playlist of videos, we need to create a TEMP playlist or use single video.
+                    // Rotations support single video or playlist ID.
+
+                    // Strategy: Pick 1 random video from the pool and loop it (simple),
+                    // OR pick a random subset and create a TEMP playlist?
+                    // "Item ... video berbeda lagi" => Different videos for each rotation item.
+                    // If I pick 1 video, it will loop for 3-8 hours.
+                    // If I pick multiple, I need to create a playlist.
+
+                    // Let's create a temp playlist to be safe and ensure variety if pool is large.
+
                     const videosToAdd = [];
                     let currentPlaylistDuration = 0;
                     let safety = 0;
-                    while (currentPlaylistDuration < durationSeconds && safety < 100) {
-                        const vid = contentPool[Math.floor(Math.random() * contentPool.length)];
+
+                    // Shuffle pool snippet
+                    const poolCopy = [...contentPool];
+
+                    while (currentPlaylistDuration < durationSeconds && safety < 100 && poolCopy.length > 0) {
+                        const randIdx = Math.floor(Math.random() * poolCopy.length);
+                        const vid = poolCopy[randIdx];
                         videosToAdd.push(vid);
-                        currentPlaylistDuration += vid.duration;
+                        currentPlaylistDuration += (vid.duration || 300); // fallback duration
+                        // poolCopy.splice(randIdx, 1); // Allow repeats? maybe yes, maybe no. Let's allow repeats for infinite duration.
                         safety++;
                     }
 
                     if (videosToAdd.length > 0) {
-                        const playlistName = `SmartGen ${currentDayStart.toISOString().split('T')[0]} #${i + 1}`;
+                        // Create Temp Playlist
+                        const playlistName = `SmartGen ${rotation.id.slice(0, 4)}`;
                         const newPlaylist = await Playlist.create({
                             name: playlistName,
                             description: 'Auto-generated for Smart Rotation',
@@ -272,13 +319,20 @@ class AutoSchedulerService {
                             user_id: userId,
                             youtube_channel_id: channelId
                         });
-                        for (let pos = 0; pos < videosToAdd.length; pos++) {
+
+                        // Add videos to playlist
+                        // Limitation: DB calls inside loop. Optimization: Batch insert if possible, but existing API is one-by-one.
+                        // We'll limit max videos to avoid slow generation.
+                        const maxVideos = 20; // Cap at 20 videos per rotation item to prevent huge delays
+                        for (let pos = 0; pos < Math.min(videosToAdd.length, maxVideos); pos++) {
                             await Playlist.addVideo(newPlaylist.id, videosToAdd[pos].id, pos + 1);
                         }
+
                         targetId = `playlist:${newPlaylist.id}`;
                         targetTitle = videosToAdd[0].title;
                         contentThumbnailFallback = videosToAdd[0].thumbnail_path;
                     } else {
+                        // Fallback simple
                         const vid = contentPool[Math.floor(Math.random() * contentPool.length)];
                         targetId = vid.id;
                         targetTitle = vid.title;
@@ -309,18 +363,18 @@ class AutoSchedulerService {
                 await Rotation.addItem({
                     rotation_id: rotation.id,
                     order_index: i,
-                    video_id: targetId,
+                    video_id: targetId, // This is now 'playlist:UUID'
                     title: targetTitle,
                     description: targetDesc,
                     tags: 'smart-rotation',
-                    privacy: privacy, // Dynamic privacy
+                    privacy: privacy,
                     category: '10',
                     thumbnail_path: selectedThumbnailPath,
                     original_thumbnail_path: selectedThumbnailPath
                 });
 
                 generatedCount.push(rotation.id);
-                nextStartTime = new Date(streamEndTime.getTime() + 5 * 60000);
+                nextStartTime = new Date(streamEndTime.getTime() + 5 * 60000); // 5 min gap
             }
         }
 
