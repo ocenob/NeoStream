@@ -146,6 +146,53 @@ class YoutubeService {
         // Perlu selectedChannel ID, nanti di pass dari caller atau disimpan di this.selectedChannelId
         return null; // Implementasi detail akan dilakukan di controller untuk logika bisnis
     }
+    /**
+     * Get Best Hours for Channel based on Views from Analytics (Last 30 Days)
+     * @returns {Promise<string[]>} Array of hours e.g. ["08:00", "13:00", "19:00"]
+     */
+    async getChannelBestHours(limit = 5) {
+        if (!this.oauth2Client) throw new Error('Service not initialized');
+
+        // Initialize Analytics Client
+        const analytics = google.youtubeAnalytics({ version: 'v2', auth: this.oauth2Client });
+
+        // Calculate date range (Last 30 days)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30);
+
+        const formatDate = (date) => date.toISOString().split('T')[0];
+
+        try {
+            const response = await analytics.reports.query({
+                ids: 'channel==MINE',
+                startDate: formatDate(startDate),
+                endDate: formatDate(endDate),
+                metrics: 'views',
+                dimensions: 'hour',
+                sort: '-views'
+            });
+
+            if (!response.data.rows || response.data.rows.length === 0) {
+                console.log('[YouTube Analytics] No data found.');
+                // Fallback hours if no data
+                return ['19:00', '20:00', '21:00', '12:00', '08:00'].slice(0, limit);
+            }
+
+            // data.rows is array of [hour, views]. Hour is "00".."23"
+            const topHours = response.data.rows
+                .slice(0, limit)
+                .map(row => `${row[0]}:00`);
+
+            console.log('[YouTube Analytics] Top Hours:', topHours);
+            return topHours;
+
+        } catch (error) {
+            console.error('[YouTube Analytics] Error fetching best hours:', error.message);
+            // Fallback hours if API fails (e.g. scope issue)
+            return ['19:00', '20:00', '21:00', '12:00', '08:00'].slice(0, limit);
+        }
+    }
 }
 
 module.exports = YoutubeService;

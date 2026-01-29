@@ -527,28 +527,85 @@
 
                         <!-- Header -->
                         <div class="p-6 pb-2 border-b border-gray-700/50">
-                            <h3 class="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
                                 <i class="ti ti-brain text-purple-400"></i>
                                 Smart Schedule
                             </h3>
-                            <p class="text-xs text-gray-400">Generate a single multi-item rotation filled from a
-                                playlist.</p>
+
+                            <!-- TABS -->
+                            <div class="flex gap-2 bg-dark-900/50 p-1 rounded-lg">
+                                <button onclick="switchSmartTab('single')" id="tab-single"
+                                    class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all bg-purple-600 text-white shadow-lg">
+                                    Single Rotation
+                                </button>
+                                <button onclick="switchSmartTab('batch')" id="tab-batch"
+                                    class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all text-gray-400 hover:text-white hover:bg-dark-700">
+                                    Batch Mode (Auto)
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Scrollable Body -->
                         <div class="p-6 overflow-y-auto custom-scrollbar">
                             <form id="smartScheduleForm" class="space-y-6">
-                                <!-- Basic Settings -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                <!-- SINGLE MODE INPUTS -->
+                                <div id="panel-single" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label class="text-xs text-gray-400 block mb-1.5">Start Time</label>
-                                        <input type="time" name="startTime" value="10:00"
+                                        <input type="time" name="startTime" id="smartStartTime" value="10:00"
                                             class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white [color-scheme:dark]">
                                     </div>
                                     <div>
                                         <label class="text-xs text-gray-400 block mb-1.5">Total Duration (Hours)</label>
-                                        <input type="number" name="durationHours" value="7" min="1" max="24"
+                                        <input type="number" name="durationHours" id="smartDuration" value="7" min="1"
+                                            max="24"
                                             class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                    </div>
+                                </div>
+
+                                <!-- BATCH MODE INPUTS -->
+                                <div id="panel-batch" class="hidden space-y-4">
+                                    <div class="bg-purple-500/10 border border-purple-500/20 p-4 rounded-xl">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <label class="text-sm font-bold text-white">Target Daily Streams</label>
+                                            <span id="batchCountDisplay"
+                                                class="text-xl font-bold text-purple-400">5x</span>
+                                        </div>
+                                        <input type="range" id="batchCountSlider" min="1" max="10" value="5"
+                                            class="w-full h-2 bg-dark-900 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                                        <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                                            <span>1x</span>
+                                            <span>10x</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-xs text-gray-400 block mb-1.5">Stream Duration
+                                                (Hours)</label>
+                                            <input type="number" id="batchDuration" value="4" min="1" max="12"
+                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                        </div>
+                                        <div class="flex items-end">
+                                            <button type="button" onclick="autoDetectBestTimes()"
+                                                class="w-full py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all">
+                                                <i class="ti ti-wand"></i> Auto-Detect Best Times
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Detected Slots Container -->
+                                    <div class="space-y-2">
+                                        <label class="text-xs text-gray-400">Generated Schedule (Start Times)</label>
+                                        <div id="batchSlotsContainer"
+                                            class="flex flex-wrap gap-2 min-h-[40px] p-2 bg-dark-900 rounded-lg border border-gray-700/50">
+                                            <span class="text-gray-500 text-xs italic p-1">Click Auto-Detect to
+                                                generate...</span>
+                                        </div>
+                                        <!-- Hidden Input to store the array -->
+                                        <input type="hidden" id="batchStartTimesJson" name="batchStartTimesJson"
+                                            value="[]">
                                     </div>
                                 </div>
 
@@ -800,16 +857,81 @@
                         }, 300);
                     }
 
+                    // -- Batch Mode Logic --
+                    let currentSmartTab = 'single';
+
+                    window.switchSmartTab = function (mode) {
+                        currentSmartTab = mode;
+                        document.getElementById('tab-single').className = mode === 'single' ?
+                            'flex-1 py-1.5 text-xs font-bold rounded-md transition-all bg-purple-600 text-white shadow-lg' :
+                            'flex-1 py-1.5 text-xs font-bold rounded-md transition-all text-gray-400 hover:text-white hover:bg-dark-700';
+
+                        document.getElementById('tab-batch').className = mode === 'batch' ?
+                            'flex-1 py-1.5 text-xs font-bold rounded-md transition-all bg-purple-600 text-white shadow-lg' :
+                            'flex-1 py-1.5 text-xs font-bold rounded-md transition-all text-gray-400 hover:text-white hover:bg-dark-700';
+
+                        document.getElementById('panel-single').classList.toggle('hidden', mode !== 'single');
+                        document.getElementById('panel-batch').classList.toggle('hidden', mode !== 'batch');
+                    }
+
+                    // Slider Listener
+                    const slider = document.getElementById('batchCountSlider');
+                    if (slider) {
+                        slider.addEventListener('input', function (e) {
+                            document.getElementById('batchCountDisplay').innerText = e.target.value + 'x';
+                        });
+                    }
+
+                    window.autoDetectBestTimes = async function () {
+                        const btn = event.currentTarget || document.activeElement;
+                        const originalText = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="ti ti-loader animate-spin"></i> Detecting...';
+
+                        const count = document.getElementById('batchCountSlider').value;
+                        const channelId = document.getElementById('rotationChannelId').value;
+
+                        try {
+                            const res = await fetch(`/api/channels/${channelId}/best-hours?count=${count}`);
+                            const data = await res.json();
+
+                            if (data.success) {
+                                // Update array
+                                const times = data.hours || [];
+                                document.getElementById('batchStartTimesJson').value = JSON.stringify(times);
+
+                                // Render tags
+                                const container = document.getElementById('batchSlotsContainer');
+                                container.innerHTML = '';
+                                if (times.length === 0) {
+                                    container.innerHTML = '<span class="text-amber-500 text-xs italic">No data found.</span>';
+                                } else {
+                                    times.forEach(t => {
+                                        container.innerHTML += `<span class="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-1 rounded text-xs font-mono font-bold">${t}</span>`;
+                                    });
+                                }
+                                showToast('success', `Found ${times.length} best times!`);
+                            } else {
+                                showToast('error', 'Failed to detect times');
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            showToast('error', 'Network error');
+                            showToast('info', 'Using fallback times');
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    }
+
                     window.confirmSmartGeneration = async function () {
                         const form = document.getElementById('smartScheduleForm');
                         const formData = new FormData(form);
 
                         const data = {
-                            startTime: formData.get('startTime'),
-                            durationHours: formData.get('durationHours'),
                             minDurationHours: formData.get('minDurationHours'),
                             maxDurationHours: formData.get('maxDurationHours'),
-                            targetItemCount: formData.get('targetItemCount'), // New Field
+                            targetItemCount: formData.get('targetItemCount'),
                             sourcePlaylistId: formData.get('sourcePlaylistId'),
                             customTitles: formData.get('customTitles').split('\n').map(t => t.trim()).filter(t => t),
                             customDescription: formData.get('customDescription'),
@@ -817,6 +939,24 @@
                             privacy: formData.get('privacy'),
                             repeatMode: formData.get('repeatMode')
                         };
+
+                        // Mode Specific
+                        if (currentSmartTab === 'batch') {
+                            const timesJson = document.getElementById('batchStartTimesJson').value;
+                            let startTimes = [];
+                            try { startTimes = JSON.parse(timesJson); } catch (e) { }
+
+                            if (startTimes.length === 0) {
+                                return showToast('error', 'Please run Auto-Detect first!');
+                            }
+
+                            data.startTimes = startTimes;
+                            data.durationHours = document.getElementById('batchDuration').value;
+                        } else {
+                            // Single Mode
+                            data.startTime = formData.get('startTime');
+                            data.durationHours = formData.get('durationHours');
+                        }
 
                         const channelId = document.getElementById('rotationChannelId').value;
                         if (!channelId) return showToast('error', 'No YouTube channel selected');

@@ -153,6 +153,36 @@ class AutoSchedulerService {
     }
 
     /**
+     * Generates MULTIPLE Smart Rotations (Batch Mode)
+     * @param {string} channelId 
+     * @param {string} userId 
+     * @param {object} config - Must include startTimes array
+     */
+    static async generateBatchRotations(channelId, userId, config) {
+        console.log('[AutoScheduler] Generating Batch Rotations', config);
+        const { startTimes = [] } = config;
+
+        if (!startTimes || startTimes.length === 0) {
+            throw new Error('No start times provided for Batch Schedule');
+        }
+
+        const results = [];
+        for (const time of startTimes) {
+            console.log(`[AutoScheduler] specific batch item for time: ${time}`);
+
+            // Clone config and override start time
+            const itemConfig = { ...config, startTime: time };
+
+            // Generate single rotation
+            // We await sequentially to be safe with DB transactions
+            const result = await this.generateRotations(channelId, userId, itemConfig);
+            results.push(result);
+        }
+
+        return { success: true, count: results.length, details: results };
+    }
+
+    /**
      * Revised Smart Schedule: Generates ONE rotation with MANY items to fill a duration.
      * @param {string} channelId 
      * @param {string} userId 

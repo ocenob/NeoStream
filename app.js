@@ -1159,23 +1159,43 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
     }
 
     const AutoSchedulerService = require('./services/autoScheduler');
-    const result = await AutoSchedulerService.generateRotations(channelId, userId, {
-      startTime,
-      durationHours: parseFloat(durationHours),
-      minDurationHours: parseFloat(minDurationHours),
-      maxDurationHours: parseFloat(maxDurationHours),
-      targetItemCount: targetItemCount,
-      sourcePlaylistId,
-      customTitles: customTitles || [],
-      customDescription,
-      customTags,
-      privacy: privacy || 'unlisted',
-      repeatMode: repeatMode || 'daily'
-    });
+    let result;
+
+    // Check if Batch Mode (startTimes array present)
+    if (req.body.startTimes && Array.isArray(req.body.startTimes) && req.body.startTimes.length > 0) {
+      result = await AutoSchedulerService.generateBatchRotations(channelId, userId, {
+        startTimes: req.body.startTimes,
+        durationHours: parseFloat(durationHours),
+        minDurationHours: parseFloat(minDurationHours),
+        maxDurationHours: parseFloat(maxDurationHours),
+        targetItemCount: targetItemCount,
+        sourcePlaylistId,
+        customTitles: customTitles || [],
+        customDescription,
+        customTags,
+        privacy: privacy || 'unlisted',
+        repeatMode: repeatMode || 'daily'
+      });
+    } else {
+      result = await AutoSchedulerService.generateRotations(channelId, userId, {
+        startTime,
+        durationHours: parseFloat(durationHours),
+        minDurationHours: parseFloat(minDurationHours),
+        maxDurationHours: parseFloat(maxDurationHours),
+        targetItemCount: targetItemCount,
+        sourcePlaylistId,
+        customTitles: customTitles || [],
+        customDescription,
+        customTags,
+        privacy: privacy || 'unlisted',
+        repeatMode: repeatMode || 'daily'
+      });
+    }
 
     res.json({
       success: true,
-      message: `Successfully generated smart rotation "${result.name}" with ${result.itemCount} items!`
+      message: `Successfully generated ${result.count} smart rotations`,
+      batchMode: !!(req.body.startTimes && req.body.startTimes.length > 0)
     });
   } catch (e) {
     console.error('Smart Rotation Error:', e);
@@ -5195,6 +5215,34 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
   } catch (error) {
     console.error('Error generating smart rotation:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/channels/:id/best-hours (New Endpoint for Analytics)
+app.get('/api/channels/:id/best-hours', isAuthenticated, async (req, res) => {
+  try {
+    const channelId = req.params.id;
+    const userId = req.session.userId;
+    const count = req.query.count ? parseInt(req.query.count) : 5;
+
+    const YoutubeChannel = require('./models/YoutubeChannel');
+    // We need user object to decrypt tokens inside YoutubeService
+    const User = require('./models/User');
+    const user = await User.findById(userId);
+
+    const YoutubeService = require('./utils/youtubeService');
+    const ytService = new YoutubeService(user, channelId);
+
+    // Init service (authenticates with Google)
+    await ytService.init();
+
+    const bestHours = await ytService.getChannelBestHours(count);
+    res.json({ success: true, hours: bestHours });
+
+  } catch (error) {
+    console.error('Error fetching best hours:', error);
+    // Return fallback to prevent UI blocked
+    res.json({ success: true, hours: ['08:00', '12:00', '18:00', '20:00', '22:00'].slice(0, 5), fallback: true });
   }
 });
 
