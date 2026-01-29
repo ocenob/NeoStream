@@ -22,8 +22,6 @@ class AutoSchedulerService {
      */
     static async generateRotationSchedule(channelId, userId, config) {
         // ... (Existing Stream Logic - kept for reference or legacy use) ...
-        // For brevity in this edit, I will focus on adding the new method below.
-        // But since I'm rewriting the file, I should include the existing method too.
         console.log('[AutoScheduler] Starting generation with config:', config);
         const {
             daysCount = 14,
@@ -162,23 +160,25 @@ class AutoSchedulerService {
      * @param {object} config 
      */
     static async generateRotations(channelId, userId, config) {
-        console.log('[AutoScheduler] Generating Single Smart Rotation with config:', config);
+        console.log('[AutoScheduler] Generating Smart Rotation with Random Playlists from pool', config);
         const {
             startTime = "10:00",
             durationHours = 7,
-            sourcePlaylistId = null,
+            sourcePlaylistId = null, // Used as 'seed' or validation, but we will pick random ones too
             customTitles = [],
             privacy = 'unlisted',
             repeatMode = 'daily'
         } = config;
 
-        // 1. Fetch Content Pool from Playlist
         if (!sourcePlaylistId) throw new Error('Source playlist is required for Smart Schedule');
-        const playlist = await Playlist.findByIdWithVideos(sourcePlaylistId);
-        if (!playlist || !playlist.videos || playlist.videos.length === 0) {
-            throw new Error('Selected playlist is empty or not found');
+
+        // 1. Fetch ALL Valid Playlists for the User (Content Pool)
+        let allPlaylists = await Playlist.findAll(userId, channelId);
+        allPlaylists = allPlaylists.filter(p => p.video_count > 0);
+
+        if (allPlaylists.length === 0) {
+            throw new Error('No valid playlists found for this channel.');
         }
-        const contentPool = playlist.videos;
 
         // 2. Fetch Gallery Thumbnails for matching
         let galleryThumbnails = await Thumbnail.findAll(userId, null);
@@ -194,7 +194,6 @@ class AutoSchedulerService {
         const streamStartTime = new Date(now);
         streamStartTime.setHours(hours, minutes, 0, 0);
 
-        // If start time is in the past today, start tomorrow
         if (streamStartTime < now) {
             streamStartTime.setDate(streamStartTime.getDate() + 1);
         }
@@ -203,7 +202,10 @@ class AutoSchedulerService {
         const streamEndTime = new Date(streamStartTime.getTime() + durationSeconds * 1000);
 
         // 4. Create Rotation Record
-        const rotationName = `Smart - ${startTime} (${durationHours}h) - ${playlist.name}`;
+        // Use the name of the first playlist or a generic name
+        const seedPlaylistName = allPlaylists.find(p => p.id == sourcePlaylistId)?.name || allPlaylists[0].name;
+        const rotationName = `Smart - ${startTime} (${durationHours}h) - ${seedPlaylistName} Mix`;
+
         const rotation = await Rotation.create({
             user_id: userId,
             name: rotationName,
@@ -216,44 +218,52 @@ class AutoSchedulerService {
             gap_minutes: 0
         });
 
-        // 5. SPLIT MODE: Fill Items until duration met
-        // We break the playlist into individual video items to allow sequential titles/thumbnails.
+        // 5. RANDOM PLAYLIST MODE: Fill Items until duration met
         let accumulatedDuration = 0;
         let itemIndex = 0;
         const itemsToAdd = [];
 
-        // Safety break at 100 items or 2x duration to prevent loops
+        // Safety break
         while (accumulatedDuration < durationSeconds && itemIndex < 100) {
-            // Pick video sequentially from playlist pool
-            const video = contentPool[itemIndex % contentPool.length];
+            // Pick RANDOM playlist from pool
+            const randomPlaylistMeta = allPlaylists[Math.floor(Math.random() * allPlaylists.length)];
+
+            // Fetch duration (sum of videos)
+            const fullRandomPlaylist = await Playlist.findByIdWithVideos(randomPlaylistMeta.id);
+            let pDuration = 300;
+            if (fullRandomPlaylist && fullRandomPlaylist.videos) {
+                pDuration = fullRandomPlaylist.videos.reduce((acc, v) => acc + (v.duration || 0), 0);
+                if (pDuration === 0) pDuration = 300;
+            }
 
             // Assign Sequential Title
-            let title = video.title;
+            let title = randomPlaylistMeta.name;
             if (customTitles.length > 0) {
-                // Use modulo to cycle through titles
-                // itemIndex 0 -> Title 0
-                // itemIndex 1 -> Title 1
                 title = customTitles[itemIndex % customTitles.length];
             }
 
             // Assign Sequential Thumbnail
-            let thumbPath = video.thumbnail_path;
-            // Attempt to match with Gallery Thumbnails sequentially
+            let thumbPath = null;
+            // Try to use the playlist's thumbnail first
+            if (randomPlaylistMeta.thumbnails) {
+                thumbPath = randomPlaylistMeta.thumbnails.split(',')[0];
+            }
+
+            // Attempt to match with Gallery Thumbnails sequentially (Priority)
             if (galleryThumbnails.length > 0) {
-                // strict sequential mapping: item #0 gets gallery #0, item #1 gets gallery #1
                 const thumb = galleryThumbnails[itemIndex % galleryThumbnails.length];
                 thumbPath = thumb.filepath;
             }
 
             itemsToAdd.push({
-                video_id: `playlist:${sourcePlaylistId}`, // FORCE PLAYLIST TYPE (Visual Compliance)
+                video_id: `playlist:${randomPlaylistMeta.id}`, // FORCE PLAYLIST TYPE
                 title: title,
-                description: video.description || '',
+                description: fullRandomPlaylist ? (fullRandomPlaylist.description || '') : '',
                 thumbnail_path: thumbPath,
-                duration: video.duration || 300 // Use video duration but point to playlist
+                duration: pDuration
             });
 
-            accumulatedDuration += (video.duration || 300);
+            accumulatedDuration += pDuration;
             itemIndex++;
         }
 
@@ -274,7 +284,7 @@ class AutoSchedulerService {
             });
         }
 
-        console.log(`[AutoScheduler] Created Split Rotation ${rotation.id} with ${itemsToAdd.length} items from Playlist ${playlist.name}`);
+        console.log(`[AutoScheduler] Created Random Playlist Rotation ${rotation.id} with ${itemsToAdd.length} items`);
 
         return {
             success: true,
