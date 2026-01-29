@@ -1129,27 +1129,22 @@ app.get('/dashboard/:slug/rotations', isAuthenticated, async (req, res) => {
   } catch (e) { console.error(e); res.redirect('/dashboard'); }
 });
 
-// Smart Rotation Generation
 app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (req, res) => {
   try {
     const channelId = req.params.id;
     const userId = req.session.userId;
 
+    // Extracts new simplified parameters
     const {
-      sourcePlaylistId,
       startTime,
       durationHours,
-      repeatMode,
-      thumbnailMode,
+      sourcePlaylistId,
+      customTitles,
       privacy,
-      customTitles
+      repeatMode
     } = req.body;
 
-    const Rotation = require('./models/Rotation');
     const YoutubeChannel = require('./models/YoutubeChannel');
-    const User = require('./models/User');
-
-    const user = await User.findById(userId);
     const channel = await YoutubeChannel.findById(channelId);
 
     if (!channel || channel.user_id !== userId) {
@@ -1157,22 +1152,18 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
     }
 
     const AutoSchedulerService = require('./services/autoScheduler');
-
     const result = await AutoSchedulerService.generateRotations(channelId, userId, {
-      sourcePlaylistId,
       startTime,
-      durationHours,
-      repeatMode,
+      durationHours: parseFloat(durationHours),
+      sourcePlaylistId,
       customTitles: customTitles || [],
       privacy: privacy || 'unlisted',
-      thumbnailMode: thumbnailMode || 'gallery'
+      repeatMode: repeatMode || 'daily'
     });
 
     res.json({
       success: true,
-      message: result.message || `Successfully generated smart rotation with ${result.itemCount} items!`,
-      rotationId: result.rotationId,
-      itemCount: result.itemCount
+      message: `Successfully generated smart rotation "${result.name}" with ${result.itemCount} items!`
     });
   } catch (e) {
     console.error('Smart Rotation Error:', e);
