@@ -1189,10 +1189,6 @@
                                             const idx = rotationItemCount;
                                             const el = document.getElementById('rotationItemsContainer').lastElementChild;
 
-                                            if (item.title) el.querySelector('.title-input').value = item.title;
-                                            if (item.description) el.querySelector('textarea').value = item.description;
-                                            if (item.tags) el.querySelector('.tags-input').value = item.tags;
-
                                             // Content Selection
                                             const vId = String(item.video_id || "");
                                             if (vId.startsWith('playlist:')) {
@@ -1210,6 +1206,11 @@
                                                     el.querySelector('.video-id-input').value = vId;
                                                 }
                                             }
+
+                                            // Re-apply Title/Desc/Tags AFTER content selection to prevent overwrite
+                                            if (item.title) el.querySelector('.title-input').value = item.title;
+                                            if (item.description) el.querySelector('textarea').value = item.description;
+                                            if (item.tags) el.querySelector('.tags-input').value = item.tags;
 
                                             // Thumbnail
                                             if (item.thumbnail_path) {
