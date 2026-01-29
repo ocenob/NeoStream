@@ -1139,6 +1139,9 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
     const {
       startTime,
       durationHours,
+      minDurationHours,
+      maxDurationHours,
+      targetItemCount,
       sourcePlaylistId,
       customTitles,
       privacy,
@@ -1156,6 +1159,9 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
     const result = await AutoSchedulerService.generateRotations(channelId, userId, {
       startTime,
       durationHours: parseFloat(durationHours),
+      minDurationHours: parseFloat(minDurationHours),
+      maxDurationHours: parseFloat(maxDurationHours),
+      targetItemCount: targetItemCount,
       sourcePlaylistId,
       customTitles: customTitles || [],
       privacy: privacy || 'unlisted',
