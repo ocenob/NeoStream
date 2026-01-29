@@ -103,7 +103,31 @@ pm2 save
 pm2 startup
 ```
 
-## 8. Mengakses Aplikasi
+## 8. Update Aplikasi (Cara Pull)
+Jika Anda sudah melakukan perubahan di komputer lokal dan sudah push ke GitHub, lakukan langkah ini di VPS untuk mengupdate aplikasi:
+
+1. **Masuk ke folder project**:
+   ```bash
+   cd neostream
+   ```
+
+2. **Pull perubahan terbaru dari GitHub**:
+   ```bash
+   git pull origin main
+   ```
+   *(Ganti `main` dengan `master` jika branch utama Anda bernama master)*
+
+3. **Install ulang dependency (Jaga-jaga jika ada paket baru)**:
+   ```bash
+   npm install
+   ```
+
+4. **Restart Aplikasi**:
+   ```bash
+   pm2 restart neostream
+   ```
+
+## 9. Mengakses Aplikasi
 Buka browser dan akses:
 `http://IP-VPS:7575`
 
