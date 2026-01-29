@@ -168,6 +168,8 @@ class AutoSchedulerService {
             targetItemCount = null, // Optional target count
             sourcePlaylistId = null,
             customTitles = [],
+            customDescription = null,
+            customTags = null,
             privacy = 'unlisted',
             repeatMode = 'daily'
         } = config;
@@ -286,7 +288,8 @@ class AutoSchedulerService {
             itemsToAdd.push({
                 video_id: `playlist:${randomPlaylistMeta.id}`,
                 title: title,
-                description: fullRandomPlaylist ? (fullRandomPlaylist.description || '') : '',
+                description: customDescription || (fullRandomPlaylist ? (fullRandomPlaylist.description || '') : ''),
+                tags: customTags || 'smart-rotation',
                 thumbnail_path: thumbPath,
                 duration: targetItemDuration // FORCED Random Duration
             });
@@ -313,7 +316,7 @@ class AutoSchedulerService {
                 video_id: item.video_id,
                 title: item.title,
                 description: item.description,
-                tags: 'smart-rotation',
+                tags: item.tags,
                 privacy: privacy,
                 category: '10',
                 thumbnail_path: item.thumbnail_path,

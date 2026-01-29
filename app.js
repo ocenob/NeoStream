@@ -1141,9 +1141,13 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
       durationHours,
       minDurationHours,
       maxDurationHours,
+      minDurationHours,
+      maxDurationHours,
       targetItemCount,
       sourcePlaylistId,
       customTitles,
+      customDescription,
+      customTags,
       privacy,
       repeatMode
     } = req.body;
@@ -1164,6 +1168,8 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
       targetItemCount: targetItemCount,
       sourcePlaylistId,
       customTitles: customTitles || [],
+      customDescription,
+      customTags,
       privacy: privacy || 'unlisted',
       repeatMode: repeatMode || 'daily'
     });

@@ -636,6 +636,20 @@
                                             </select>
                                         </div>
                                     </div>
+
+                                    <div>
+                                        <label class="text-xs text-gray-400 block mb-1.5">Custom Description (Applied to
+                                            ALL items)</label>
+                                        <textarea name="customDescription" rows="3"
+                                            placeholder="Enter a description for all generated streams..."
+                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-xs text-white leading-relaxed resize-none"></textarea>
+                                    </div>
+
+                                    <div>
+                                        <label class="text-xs text-gray-400 block mb-1.5">Tags (Comma separated)</label>
+                                        <input type="text" name="customTags" placeholder="gaming, live, 24/7"
+                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                    </div>
                                 </div>
                             </form>
                         </div>
@@ -798,6 +812,8 @@
                             targetItemCount: formData.get('targetItemCount'), // New Field
                             sourcePlaylistId: formData.get('sourcePlaylistId'),
                             customTitles: formData.get('customTitles').split('\n').map(t => t.trim()).filter(t => t),
+                            customDescription: formData.get('customDescription'),
+                            customTags: formData.get('customTags'),
                             privacy: formData.get('privacy'),
                             repeatMode: formData.get('repeatMode')
                         };
