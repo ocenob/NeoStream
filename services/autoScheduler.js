@@ -173,6 +173,18 @@ class AutoSchedulerService {
             // Clone config and override start time
             const itemConfig = { ...config, startTime: time };
 
+            // Random Duration Logic
+            if (config.batchMinDuration && config.batchMaxDuration) {
+                const min = config.batchMinDuration;
+                const max = config.batchMaxDuration;
+                // Random duration between min and max
+                let randomDuration = Math.random() * (max - min) + min;
+                // Round to nearest 0.5 hours for cleaner schedules
+                randomDuration = Math.round(randomDuration * 2) / 2;
+                itemConfig.durationHours = randomDuration;
+                console.log(`[AutoScheduler] Randomized duration for ${time}: ${randomDuration}h`);
+            }
+
             // Generate single rotation
             // We await sequentially to be safe with DB transactions
             const result = await this.generateRotations(channelId, userId, itemConfig);

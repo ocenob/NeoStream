@@ -582,17 +582,24 @@
 
                                     <div class="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label class="text-xs text-gray-400 block mb-1.5">Stream Duration
+                                            <label class="text-xs text-gray-400 block mb-1.5">Min Stream Duration
                                                 (Hours)</label>
-                                            <input type="number" id="batchDuration" value="4" min="1" max="12"
+                                            <input type="number" id="batchMinDuration" value="3" min="1" max="24"
                                                 class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
                                         </div>
-                                        <div class="flex items-end">
-                                            <button type="button" onclick="autoDetectBestTimes()"
-                                                class="w-full py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all">
-                                                <i class="ti ti-wand"></i> Auto-Detect Best Times
-                                            </button>
+                                        <div>
+                                            <label class="text-xs text-gray-400 block mb-1.5">Max Stream Duration
+                                                (Hours)</label>
+                                            <input type="number" id="batchMaxDuration" value="7" min="1" max="24"
+                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
                                         </div>
+                                    </div>
+
+                                    <div class="flex items-end">
+                                        <button type="button" onclick="autoDetectBestTimes()"
+                                            class="w-full py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all">
+                                            <i class="ti ti-wand"></i> Auto-Detect Best Times
+                                        </button>
                                     </div>
 
                                     <!-- Detected Slots Container -->
@@ -951,7 +958,9 @@
                             }
 
                             data.startTimes = startTimes;
-                            data.durationHours = document.getElementById('batchDuration').value;
+                            // Send Min/Max for random calculation on backend
+                            data.batchMinDuration = document.getElementById('batchMinDuration').value;
+                            data.batchMaxDuration = document.getElementById('batchMaxDuration').value;
                         } else {
                             // Single Mode
                             data.startTime = formData.get('startTime');

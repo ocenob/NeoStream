@@ -1165,7 +1165,10 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
     if (req.body.startTimes && Array.isArray(req.body.startTimes) && req.body.startTimes.length > 0) {
       result = await AutoSchedulerService.generateBatchRotations(channelId, userId, {
         startTimes: req.body.startTimes,
-        durationHours: parseFloat(durationHours),
+        // Pass Min/Max for random duration calculation
+        batchMinDuration: parseFloat(req.body.batchMinDuration || durationHours),
+        batchMaxDuration: parseFloat(req.body.batchMaxDuration || durationHours),
+        durationHours: parseFloat(durationHours), // Fallback/Original
         minDurationHours: parseFloat(minDurationHours),
         maxDurationHours: parseFloat(maxDurationHours),
         targetItemCount: targetItemCount,
