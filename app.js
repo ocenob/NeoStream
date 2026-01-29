@@ -1177,7 +1177,12 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
         customDescription,
         customTags,
         privacy: privacy || 'unlisted',
-        repeatMode: repeatMode || 'daily'
+        repeatMode: repeatMode || 'daily',
+
+        // Weekly Pattern Params
+        weeklyPattern: req.body.weeklyPattern === true || req.body.weeklyPattern === 'true',
+        minDailyStreams: parseInt(req.body.minDailyStreams || 5),
+        maxDailyStreams: parseInt(req.body.maxDailyStreams || 10)
       });
     } else {
       result = await AutoSchedulerService.generateRotations(channelId, userId, {
