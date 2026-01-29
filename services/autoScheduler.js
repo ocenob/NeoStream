@@ -180,10 +180,11 @@ class AutoSchedulerService {
             throw new Error('No valid playlists found for this channel.');
         }
 
-        // 2. Fetch Gallery Thumbnails for matching
-        let galleryThumbnails = await Thumbnail.findAll(userId, null);
-        const channelThumbnails = await Thumbnail.findAll(userId, channelId);
-        galleryThumbnails = [...galleryThumbnails, ...channelThumbnails];
+        // 2. Fetch Gallery Thumbnails (STRICTLY Channel Specific)
+        // User requested: "Thumbnail dari galery Thumbnail yg ada di Chanel tersebut"
+        let galleryThumbnails = await Thumbnail.findAll(userId, channelId);
+
+        // Remove duplicates if any (though findAll shouldn't normally return dups if strictly queried)
         galleryThumbnails = galleryThumbnails.filter((t, index, self) =>
             index === self.findIndex((t2) => (t2.id === t.id))
         );
