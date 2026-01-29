@@ -1141,8 +1141,7 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
       durationHours,
       minDurationHours,
       maxDurationHours,
-      minDurationHours,
-      maxDurationHours,
+
       targetItemCount,
       sourcePlaylistId,
       customTitles,
