@@ -753,57 +753,56 @@
                     }
 
                     window.confirmSmartGeneration = async function () {
-                        const daysCount = parseInt(document.getElementById('smartDaysCount').value) || 14;
-                        const minDailyHours = parseInt(document.getElementById('smartMinDailyHours').value) || 5;
-                        const maxDailyHours = parseInt(document.getElementById('smartMaxDailyHours').value) || 10;
-                        const contentType = document.getElementById('smartContentType').value;
-                        const privacy = document.getElementById('smartPrivacy').value;
-                        const repeatMode = document.getElementById('smartRepeatMode').value;
-                        const thumbnailMode = document.getElementById('smartThumbnailMode').value;
-                        // repeatMode removed from UI
-                        const rawTitlesInput = document.getElementById('smartCustomTitles');
-                        const rawTitles = rawTitlesInput ? rawTitlesInput.value : '';
-                        const customTitles = rawTitles.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+                        const form = document.getElementById('smartScheduleForm');
+                        const formData = new FormData(form);
+
+                        const data = {
+                            startTime: formData.get('startTime'),
+                            durationHours: formData.get('durationHours'),
+                            sourcePlaylistId: formData.get('sourcePlaylistId'),
+                            customTitles: formData.get('customTitles').split('\n').map(t => t.trim()).filter(t => t),
+                            privacy: formData.get('privacy'),
+                            repeatMode: formData.get('repeatMode')
+                        };
+
+                        const channelId = document.getElementById('rotationChannelId').value;
+                        if (!channelId) return showToast('error', 'No YouTube channel selected');
+
+                        if (!data.sourcePlaylistId || data.sourcePlaylistId === '') {
+                            return showToast('error', 'Please select a source playlist');
+                        }
 
                         closeSmartConfigModal();
 
                         const btn = document.getElementById('btnGenerateSmart');
                         const originalHTML = btn.innerHTML;
                         btn.disabled = true;
-                        btn.innerHTML = '<i class="ti ti-loader animate-spin"></i> Analyzing Heatmap...';
+                        btn.innerHTML = '<i class="ti ti-loader animate-spin"></i> Generating...';
 
                         try {
-                            const res = await fetch(`/api/channels/<%= channel.id %>/generate-smart-rotation`, {
+                            const res = await fetch(`/api/channels/${channelId}/generate-smart-rotation`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'X-CSRF-Token': csrfToken
                                 },
-                                body: JSON.stringify({
-                                    daysCount,
-                                    minDailyHours,
-                                    maxDailyHours,
-                                    contentType,
-                                    customTitles,
-                                    privacy,
-                                    repeatMode,
-                                    thumbnailMode
-                                })
+                                body: JSON.stringify(data)
                             });
-                            const data = await res.json();
-                            if (data.success) {
-                                await window.showAlert(data.message);
-                                location.reload();
+                            const result = await res.json();
+
+                            if (result.success) {
+                                showToast('success', result.message);
+                                setTimeout(() => location.reload(), 1500);
                             } else {
+                                showToast('error', result.error || 'Generation failed');
                                 btn.disabled = false;
                                 btn.innerHTML = originalHTML;
-                                window.showAlert(data.error || "Gagal membuat jadwal cerdas Pipen.");
                             }
                         } catch (e) {
+                            console.error(e);
+                            showToast('error', 'Network error occurred');
                             btn.disabled = false;
                             btn.innerHTML = originalHTML;
-                            console.error(e);
-                            window.showAlert("Terjadi kesalahan: " + e.message);
                         }
                     }
 
