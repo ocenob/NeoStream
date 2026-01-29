@@ -400,8 +400,19 @@ class AutoSchedulerService {
             // 5a. GENERATE RANDOM DURATION TARGET (Dynamic User Range)
             let minDur = parseFloat(minDurationHours) * 3600;
             let maxDur = parseFloat(maxDurationHours) * 3600;
-            if (isNaN(minDur)) minDur = 3 * 3600;
-            if (isNaN(maxDur)) maxDur = 7 * 3600;
+
+            // Fix for High Item Count: If user wants 50 items in 5 hours, we can't use 3-hour minimums.
+            if (useItemCountMode) {
+                // Calculate average needed duration
+                const avgDurationNeeded = durationSeconds / limitCount;
+                // Set bounds around this average
+                minDur = avgDurationNeeded * 0.8;
+                maxDur = avgDurationNeeded * 1.2;
+                console.log(`[Auto] Adjusting Item Duration for Target Count ${limitCount}: ${minDur}s - ${maxDur}s`);
+            } else {
+                if (isNaN(minDur)) minDur = 3 * 3600;
+                if (isNaN(maxDur)) maxDur = 7 * 3600;
+            }
 
             // Random offset for uniqueness (seconds)
             let randomOffset = Math.floor(Math.random() * 600); // 0-10m variance
