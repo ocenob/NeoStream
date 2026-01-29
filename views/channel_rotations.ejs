@@ -523,125 +523,98 @@
                 <div id="smartConfigModal"
                     class="fixed inset-0 flex items-center justify-center z-[60] hidden bg-black/50 backdrop-blur-sm">
                     <div
-                        class="modal-container bg-dark-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-700 transform transition-all duration-300 opacity-0 scale-95 flex flex-col max-h-[90vh]">
+                        class="modal-container bg-dark-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 border border-gray-700 transform transition-all duration-300 opacity-0 scale-95 flex flex-col max-h-[90vh]">
 
                         <!-- Header -->
-                        <div class="p-6 pb-2">
-                            <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                                <i class="ti ti-settings text-purple-400"></i>
-                                Smart Rotation Configuration
+                        <div class="p-6 pb-2 border-b border-gray-700/50">
+                            <h3 class="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                                <i class="ti ti-brain text-purple-400"></i>
+                                Smart Schedule
                             </h3>
-                            <p class="text-sm text-gray-400">Atur parameter untuk jadwal otomatis Anda</p>
+                            <p class="text-xs text-gray-400">Generate a single multi-item rotation filled from a
+                                playlist.</p>
                         </div>
 
                         <!-- Scrollable Body -->
-                        <div class="p-6 pt-2 overflow-y-auto custom-scrollbar space-y-4">
+                        <div class="p-6 overflow-y-auto custom-scrollbar">
+                            <form id="smartScheduleForm" class="space-y-6">
+                                <!-- Basic Settings -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-xs text-gray-400 block mb-1.5">Start Time</label>
+                                        <input type="time" name="startTime" value="10:00"
+                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white [color-scheme:dark]">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-400 block mb-1.5">Total Duration (Hours)</label>
+                                        <input type="number" name="durationHours" value="7" min="1" max="24"
+                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                    </div>
+                                </div>
 
-                            <!-- Days Count -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    Durasi Jadwal (Hari)
-                                </label>
-                                <input type="number" id="smartDaysCount" value="14" min="1" max="365"
-                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                                <p class="text-xs text-gray-500 mt-1">Max: 365 hari. Proses ini memakan waktu beberapa
-                                    detik.</p>
-                            </div>
+                                <!-- Content Source -->
+                                <div class="bg-dark-700/30 p-4 rounded-lg border border-gray-700">
+                                    <label class="text-xs text-gray-400 block mb-1.5">Source Playlist</label>
+                                    <select id="smartSourcePlaylist" name="sourcePlaylistId"
+                                        class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white focus:border-purple-500">
+                                        <% if (playlists && playlists.length> 0) { %>
+                                            <% playlists.forEach(p=> { %>
+                                                <option value="<%= p.id %>">
+                                                    <%= p.name %> (<%= p.video_count %> videos)
+                                                </option>
+                                                <% }); %>
+                                                    <% } else { %>
+                                                        <option value="" disabled selected>No playlists available
+                                                        </option>
+                                                        <% } %>
+                                    </select>
+                                </div>
 
-                            <!-- Min Streams -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    Min Stream per Hari
-                                </label>
-                                <input type="number" id="smartMinDailyHours" value="6" min="1" max="24"
-                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                                <p class="text-xs text-gray-500 mt-1">Default: 6 stream</p>
-                            </div>
+                                <!-- Metadata -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="text-xs text-gray-400 block mb-1.5">Custom Titles (One per
+                                            line)</label>
+                                        <textarea name="customTitles" rows="5"
+                                            placeholder="Title #1&#10;Title #2&#10;Title #3"
+                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-xs text-white leading-relaxed resize-none"></textarea>
+                                        <p class="text-[10px] text-gray-500 mt-1">Titles and gallery thumbnails will be
+                                            assigned
+                                            sequentially to items.</p>
+                                    </div>
 
-                            <!-- Max Streams -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    Max Stream per Hari
-                                </label>
-                                <input type="number" id="smartMaxDailyHours" value="12" min="1" max="24"
-                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                                <p class="text-xs text-gray-500 mt-1">Default: 12 stream</p>
-                            </div>
-
-                            <!-- Custom Titles -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    Custom Random Titles (Optional)
-                                </label>
-                                <textarea id="smartCustomTitles" rows="3"
-                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                                    placeholder="Masukkan daftar judul (satu per baris). Sistem akan memilih satu secara acak untuk setiap stream.&#10;Contoh:&#10;Lofi Hip Hop Radio&#10;Jazz Relaxing Music&#10;Study Beats 24/7"></textarea>
-                                <p class="text-xs text-gray-500 mt-1">Jika kosong, judul diambil dari nama
-                                    video/playlist.</p>
-                            </div>
-
-                            <!-- Content Selector -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    Content untuk Rotation
-                                </label>
-                                <select id="smartContentType"
-                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                                    <option value="video">Video Acak (Playlist Baru)</option>
-                                    <option value="playlist">Playlist Acak (Existing)</option>
-                                </select>
-                            </div>
-
-                            <!-- Privacy Selector -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    YouTube Privacy
-                                </label>
-                                <select id="smartPrivacy"
-                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                                    <option value="public">Public</option>
-                                    <option value="unlisted" selected>Unlisted</option>
-                                    <option value="private">Private</option>
-                                </select>
-                            </div>
-
-                            <!-- Repeat Mode Selector -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    Repeat Mode
-                                </label>
-                                <select id="smartRepeatMode"
-                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                                    <option value="none" selected>Sekali Jalan (Once)</option>
-                                    <option value="daily">Harian (Daily)</option>
-                                    <option value="weekly">Mingguan (Weekly)</option>
-                                </select>
-                            </div>
-
-                            <!-- Thumbnail Mode Selector -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    Thumbnail Source
-                                </label>
-                                <select id="smartThumbnailMode"
-                                    class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                                    <option value="auto" selected>Otomatis (Gallery > Video)</option>
-                                    <option value="gallery">Hanya dari Gallery</option>
-                                    <option value="video">Hanya dari Video/Playlist</option>
-                                </select>
-                            </div>
-
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-xs text-gray-400 block mb-1.5">Privacy</label>
+                                            <select name="privacy"
+                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                                <option value="public">Public</option>
+                                                <option value="unlisted" selected>Unlisted</option>
+                                                <option value="private">Private</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-400 block mb-1.5">Repeat Mode</label>
+                                            <select name="repeatMode"
+                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                                <option value="daily" selected>Daily</option>
+                                                <option value="none">No Repeat</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
 
                         <!-- Footer -->
                         <div class="p-6 pt-0 flex justify-end gap-3 mt-4 border-t border-gray-700 pt-4">
                             <button onclick="closeSmartConfigModal()"
                                 class="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-dark-700 transition-colors">
-                                Batal
+                                Cancel
                             </button>
                             <button onclick="confirmSmartGeneration()"
-                                class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-primary text-white font-medium hover:shadow-lg hover:shadow-primary/25 transition-all transform hover:scale-105">
-                                Generate
+                                class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:shadow-lg hover:shadow-purple-500/20 transition-all transform hover:scale-105">
+                                <i class="ti ti-wand mr-1"></i> Generate
                             </button>
                         </div>
                     </div>
