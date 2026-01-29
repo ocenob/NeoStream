@@ -638,16 +638,6 @@
                   document.body.style.overflow = '';
                 }
 
-                function toggleSmartSource() {
-                  const type = document.getElementById('smartSourceType').value;
-                  const playlistSelector = document.getElementById('smartPlaylistSelector');
-                  if (type === 'playlist') {
-                    playlistSelector.classList.remove('opacity-50', 'pointer-events-none');
-                  } else {
-                    playlistSelector.classList.add('opacity-50', 'pointer-events-none');
-                  }
-                }
-
                 function generateSmartSchedule() {
                   const form = document.getElementById('smartScheduleForm');
                   const btn = document.querySelector('#smartScheduleModal button[onclick="generateSmartSchedule()"]');
@@ -664,9 +654,15 @@
                     repeatMode: formData.get('repeatMode')
                   };
 
+                  console.log('Smart Schedule Data to Send:', data);
+
                   const channelId = document.getElementById('rotationChannelId').value;
                   if (!channelId) return showToast('error', 'No YouTube channel selected');
-                  if (!data.sourcePlaylistId) return showToast('error', 'Please select a source playlist');
+
+                  if (!data.sourcePlaylistId || data.sourcePlaylistId === '') {
+                    console.error('Frontend Check: Source Playlist ID is missing:', data.sourcePlaylistId);
+                    return showToast('error', 'Please select a source playlist');
+                  }
 
                   btn.disabled = true;
                   btn.innerHTML = '<i class="ti ti-loader animate-spin"></i> Generating...';
