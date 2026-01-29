@@ -216,63 +216,42 @@ class AutoSchedulerService {
             gap_minutes: 0
         });
 
-        // 5. Fill Items until duration met
-        let accumulatedDuration = 0;
-        let itemIndex = 0;
-        const itemsToAdd = [];
+        // 5. Create Single Playlist Item (MERGED MODE)
+        // Instead of breaking down into videos, we add the playlist as a single item.
+        // This sacrifices sequential titles but keeps the UI clean.
 
-        // Safety break at 100 items or 2x duration to prevent loops
-        while (accumulatedDuration < durationSeconds && itemIndex < 100) {
-            // Pick video sequentially from playlist pool
-            const video = contentPool[itemIndex % contentPool.length];
-
-            // Assign Sequential Title
-            let title = video.title;
-            if (customTitles.length > 0) {
-                title = customTitles[itemIndex % customTitles.length];
-            }
-
-            // Assign Sequential Thumbnail
-            let thumbPath = video.thumbnail_path;
-            if (galleryThumbnails.length > 0) {
-                const thumb = galleryThumbnails[itemIndex % galleryThumbnails.length];
-                thumbPath = thumb.filepath;
-            }
-
-            itemsToAdd.push({
-                video_id: video.id,
-                title: title,
-                description: video.description || '',
-                thumbnail_path: thumbPath,
-                duration: video.duration || 300 // fallback 5 min
-            });
-
-            accumulatedDuration += (video.duration || 300);
-            itemIndex++;
+        let displayTitle = playlist.name;
+        if (customTitles && customTitles.length > 0) {
+            displayTitle = customTitles[0];
         }
 
-        // 6. Bulk Add Items to Rotation
-        for (let i = 0; i < itemsToAdd.length; i++) {
-            const item = itemsToAdd[i];
-            await Rotation.addItem({
-                rotation_id: rotation.id,
-                order_index: i,
-                video_id: item.video_id,
-                title: item.title,
-                description: item.description,
-                tags: 'smart-rotation',
-                privacy: privacy,
-                category: '10',
-                thumbnail_path: item.thumbnail_path,
-                original_thumbnail_path: item.thumbnail_path
-            });
+        // Use first video thumbnail or default
+        let thumbPath = null;
+        if (contentPool.length > 0) {
+            const firstVid = contentPool[0];
+            thumbPath = firstVid.thumbnail_path || firstVid.thumbnail;
         }
+
+        await Rotation.addItem({
+            rotation_id: rotation.id,
+            order_index: 0,
+            video_id: `playlist:${sourcePlaylistId}`, // Special playlist format
+            title: displayTitle,
+            description: `Smart Auto-Schedule: ${playlist.name}`,
+            tags: 'smart-rotation',
+            privacy: privacy,
+            category: '10',
+            thumbnail_path: thumbPath,
+            original_thumbnail_path: thumbPath
+        });
+
+        console.log(`[AutoScheduler] Created Merged Playlist Rotation: ${rotation.id}`);
 
         return {
             success: true,
             id: rotation.id,
             name: rotationName,
-            itemCount: itemsToAdd.length
+            itemCount: 1
         };
     }
 }
