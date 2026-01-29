@@ -624,6 +624,12 @@
                   const modal = document.getElementById('smartScheduleModal');
                   modal.classList.remove('hidden');
                   document.body.style.overflow = 'hidden';
+
+                  const select = document.getElementById('smartSourcePlaylist');
+                  console.log('Playlist options:', select.options.length);
+                  if (select.options.length === 1 && select.options[0].disabled) {
+                    // alert('Debug: No playlists found in dropdown!');
+                  }
                 }
 
                 function closeSmartScheduleModal() {

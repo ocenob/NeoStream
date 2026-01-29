@@ -1114,6 +1114,7 @@ app.get('/dashboard/:slug/rotations', isAuthenticated, async (req, res) => {
       v.file_size > 0
     );
     const playlists = await Playlist.findAll(user.id, channel.id);
+    console.log(`[DEBUG] Rotations Route: found ${playlists.length} playlists for channel ${channel.id}`);
     const thumbnails = await Thumbnail.findAll(user.id, channel.id);
 
     res.render('channel_rotations', {
