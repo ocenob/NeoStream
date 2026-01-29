@@ -576,75 +576,66 @@
                         </div>
 
                         <!-- Schedule Parameters -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                              <i class="ti ti-calendar-time text-blue-400"></i> Daily Schedule
-                            </h4>
-                            <div class="space-y-3">
-                              <div>
-                                <label class="text-xs text-gray-400 block mb-1">Items Per Day (Min - Max)</label>
-                                <div class="flex items-center gap-2">
-                                  <input type="number" name="minStreams" value="6" min="1" max="24"
-                                    class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm text-center">
-                                  <span class="text-gray-500">-</span>
-                                  <input type="number" name="maxStreams" value="12" min="1" max="24"
-                                    class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm text-center">
-                                </div>
-                              </div>
-                              <div>
-                                <label class="text-xs text-gray-400 block mb-1">Duration Hours (Min - Max)</label>
-                                <div class="flex items-center gap-2">
-                                  <input type="number" name="minDuration" value="3" min="1" max="24"
-                                    class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm text-center">
-                                  <span class="text-gray-500">-</span>
-                                  <input type="number" name="maxDuration" value="8" min="1" max="24"
-                                    class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm text-center">
-                                </div>
-                              </div>
-                              <div>
-                                <label class="text-xs text-gray-400 block mb-1">Generate For (Days)</label>
-                                <select name="daysCount"
-                                  class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm">
-                                  <option value="7">Next 7 Days</option>
-                                  <option value="14" selected>Next 14 Days</option>
-                                  <option value="30">Next 30 Days</option>
-                                </select>
-                              </div>
+                        <div class="bg-dark-700/50 p-4 rounded-lg border border-gray-700">
+                          <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                            <i class="ti ti-calendar-time text-blue-400"></i> Schedule Settings
+                          </h4>
+                          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label class="text-xs text-gray-400 block mb-1.5">Start Time</label>
+                              <input type="time" name="startTime" value="10:00" required
+                                class="w-full px-3 py-2 bg-dark-800 border border-gray-600 rounded-lg text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 [color-scheme:dark]">
+                            </div>
+                            <div>
+                              <label class="text-xs text-gray-400 block mb-1.5">Duration (Hours)</label>
+                              <input type="number" name="durationHours" value="7" min="1" max="24" step="0.5" required
+                                class="w-full px-3 py-2 bg-dark-800 border border-gray-600 rounded-lg text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
+                            </div>
+                            <div>
+                              <label class="text-xs text-gray-400 block mb-1.5">Repeat Mode</label>
+                              <select name="repeatMode"
+                                class="w-full px-3 py-2 bg-dark-800 border border-gray-600 rounded-lg text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
+                                <option value="daily" selected>Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                              </select>
                             </div>
                           </div>
+                        </div>
 
-                          <div>
-                            <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                              <i class="ti ti-settings text-green-400"></i> Metadata
-                            </h4>
-                            <div class="space-y-3">
+                        <!-- Metadata -->
+                        <div class="bg-dark-700/50 p-4 rounded-lg border border-gray-700">
+
+                          <h4 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                            <i class="ti ti-settings text-green-400"></i> Customization
+                          </h4>
+                          <div class="space-y-3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
-                                <label class="text-xs text-gray-400 block mb-1">Thumbnails</label>
+                                <label class="text-xs text-gray-400 block mb-1.5">Thumbnail Mode</label>
                                 <select name="thumbnailMode"
-                                  class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm">
-                                  <option value="auto">Auto (Random Gallery)</option>
+                                  class="w-full px-3 py-2 bg-dark-800 border border-gray-600 rounded-lg text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
+                                  <option value="gallery" selected>Gallery Order (Sequential)</option>
                                   <option value="video">Original Video Thumbnail</option>
-                                  <option value="gallery">Random From Gallery Only</option>
                                 </select>
                               </div>
                               <div>
-                                <label class="text-xs text-gray-400 block mb-1">Privacy</label>
+                                <label class="text-xs text-gray-400 block mb-1.5">Privacy</label>
                                 <select name="privacy"
-                                  class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-sm">
+                                  class="w-full px-3 py-2 bg-dark-800 border border-gray-600 rounded-lg text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500">
                                   <option value="public">Public</option>
                                   <option value="unlisted" selected>Unlisted</option>
                                   <option value="private">Private</option>
                                 </select>
                               </div>
-                              <div>
-                                <label class="text-xs text-gray-400 block mb-1">Custom Titles (Optional)</label>
-                                <textarea name="customTitles" rows="4"
-                                  placeholder="Enter one title per line...&#10;Chill Vibes 2026&#10;Best Gaming Moments"
-                                  class="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-xs leading-relaxed resize-none"></textarea>
-                                <p class="text-[10px] text-gray-500 mt-1">If provided, titles will be picked randomly
-                                  from this list.</p>
-                              </div>
+                            </div>
+                            <div>
+                              <label class="text-xs text-gray-400 block mb-1.5">Custom Titles (One per line)</label>
+                              <textarea name="customTitles" rows="4"
+                                placeholder="Lo-Fi Morning Beats&#10;Chill Afternoon Session&#10;Evening Jazz Vibes&#10;Night Lounge Music&#10;..."
+                                class="w-full px-3 py-2 bg-dark-800 border border-gray-600 rounded-lg text-xs leading-relaxed resize-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"></textarea>
+                              <p class="text-[10px] text-gray-500 mt-1">Titles will loop if items exceed count. Leave
+                                empty to use video titles.</p>
                             </div>
                           </div>
                         </div>
@@ -691,16 +682,12 @@
                   const btn = document.querySelector('#smartScheduleModal button[onclick="generateSmartSchedule()"]');
                   const originalText = btn.innerHTML;
 
-                  // Collect Data
                   const formData = new FormData(form);
                   const data = {
-                    sourceType: formData.get('sourceType'),
                     sourcePlaylistId: formData.get('sourcePlaylistId'),
-                    minStreams: formData.get('minStreams'),
-                    maxStreams: formData.get('maxStreams'),
-                    minDuration: formData.get('minDuration'),
-                    maxDuration: formData.get('maxDuration'),
-                    daysCount: formData.get('daysCount'),
+                    startTime: formData.get('startTime'),
+                    durationHours: parseFloat(formData.get('durationHours')),
+                    repeatMode: formData.get('repeatMode'),
                     thumbnailMode: formData.get('thumbnailMode'),
                     privacy: formData.get('privacy'),
                     customTitles: formData.get('customTitles').split('\n').map(t => t.trim()).filter(t => t)

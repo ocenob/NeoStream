@@ -1134,19 +1134,16 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
   try {
     const channelId = req.params.id;
     const userId = req.session.userId;
-    const daysCount = parseInt(req.body.daysCount) || 14;
-    const minDailyHours = parseInt(req.body.minDailyHours) || 5;
-    const maxDailyHours = parseInt(req.body.maxDailyHours) || 10;
 
-    // Normalize contentType to singular for service
-    let contentType = req.body.contentType || 'video';
-    if (contentType === 'videos') contentType = 'video';
-    if (contentType === 'playlists') contentType = 'playlist';
-
-    const customTitles = req.body.customTitles || [];
-    const repeatMode = req.body.repeatMode || 'none';
-    const privacy = req.body.privacy || 'public';
-    const thumbnailMode = req.body.thumbnailMode || 'auto';
+    const {
+      sourcePlaylistId,
+      startTime,
+      durationHours,
+      repeatMode,
+      thumbnailMode,
+      privacy,
+      customTitles
+    } = req.body;
 
     const Rotation = require('./models/Rotation');
     const YoutubeChannel = require('./models/YoutubeChannel');
@@ -1162,19 +1159,20 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
     const AutoSchedulerService = require('./services/autoScheduler');
 
     const result = await AutoSchedulerService.generateRotations(channelId, userId, {
-      daysCount,
-      minStreamsPerDay: minDailyHours,
-      maxStreamsPerDay: maxDailyHours,
-      contentType,
-      customTitles: customTitles,
-      privacy,
+      sourcePlaylistId,
+      startTime,
+      durationHours,
       repeatMode,
-      thumbnailMode
+      customTitles: customTitles || [],
+      privacy: privacy || 'unlisted',
+      thumbnailMode: thumbnailMode || 'gallery'
     });
 
     res.json({
       success: true,
-      message: `Successfully generated ${result.count} smart rotations for the next ${daysCount} days!`
+      message: result.message || `Successfully generated smart rotation with ${result.itemCount} items!`,
+      rotationId: result.rotationId,
+      itemCount: result.itemCount
     });
   } catch (e) {
     console.error('Smart Rotation Error:', e);

@@ -156,230 +156,141 @@ class AutoSchedulerService {
     }
 
     /**
-     * Generates ROTATION records instead of Stream records.
-     * This allows them to appear in the "Rotations" UI with full features.
+     * Generates ONE ROTATION record with MULTIPLE ITEMS.
+     * Items fill the specified duration using videos from the selected playlist.
+     * Titles and thumbnails loop if items exceed custom list count.
      */
     static async generateRotations(channelId, userId, config) {
-        console.log('[AutoScheduler] Starting ROTATION generation with config:', config);
+        console.log('[AutoScheduler] Starting SINGLE MULTI-ITEM ROTATION generation with config:', config);
         const {
-            daysCount = 14,
-            minStreamsPerDay = 6,
-            maxStreamsPerDay = 12,
-            minDurationHours = 3,
-            maxDurationHours = 8,
-            contentType = 'video',
             sourcePlaylistId = null,
-            customTitles = [],
+            startTime = '10:00',           // HH:MM format
+            durationHours = 7,            // Duration in hours
+            repeatMode = 'daily',         // daily | weekly | monthly
+            customTitles = [],            // Array of custom titles
             privacy = 'unlisted',
-            repeatMode = 'none',
-            thumbnailMode = 'auto' // auto | gallery | video
+            thumbnailMode = 'gallery'     // gallery | video
         } = config;
 
-        // 1. Fetch Content Pool
-        let contentPool = [];
-        if (sourcePlaylistId) {
-            // Source from Specific Playlist
-            const playlist = await Playlist.findByIdWithVideos(sourcePlaylistId);
-            if (!playlist) throw new Error('Source playlist not found');
-
-            // Filter out audio-only if needed, or keep them if mixed.
-            // For streams, we usually want videos.
-            contentPool = playlist.videos || [];
-
-            // Filter out missing files if possible?
-            // Assuming playlist.videos have full video objects. 
-            // The query returns `v.*`, so yes.
-        } else if (contentType === 'playlist') {
-            // Fallback to old behavior: Random Playlist Selection
-            // (We might not use this via the new UI, but keeping for compatibility)
-            contentPool = await Playlist.findAll(userId, channelId);
-            contentPool = contentPool.filter(p => p.video_count > 0);
-        } else {
-            // All Videos
-            contentPool = await Video.findAll(userId, channelId);
-            // Filter out audio
-            contentPool = contentPool.filter(v =>
-                !v.filepath.includes('/audio/') &&
-                !v.filepath.endsWith('.mp3') &&
-                !v.filepath.endsWith('.m4a') &&
-                !v.filepath.endsWith('.aac')
-            );
+        // Validation
+        if (!sourcePlaylistId) {
+            throw new Error('Source playlist is required');
+        }
+        if (!startTime || !durationHours) {
+            throw new Error('Start time and duration are required');
         }
 
+        // 1. Fetch Content Pool from Playlist
+        const playlist = await Playlist.findByIdWithVideos(sourcePlaylistId);
+        if (!playlist) throw new Error('Source playlist not found');
+
+        let contentPool = playlist.videos || [];
         if (contentPool.length === 0) {
-            throw new Error(`No valid content found for the selected source.`);
+            throw new Error('No videos found in selected playlist');
         }
 
-        // 2. Fetch Thumbnail Pool (Gallery)
+        // 2. Fetch Gallery Thumbnails
         let galleryThumbnails = [];
-        if (thumbnailMode !== 'video') {
+        if (thumbnailMode === 'gallery') {
             galleryThumbnails = await Thumbnail.findAll(userId, null);
             const channelThumbnails = await Thumbnail.findAll(userId, channelId);
             galleryThumbnails = [...galleryThumbnails, ...channelThumbnails];
+            // Remove duplicates
             galleryThumbnails = galleryThumbnails.filter((t, index, self) =>
                 index === self.findIndex((t2) => (t2.id === t.id))
             );
         }
 
-        // 3. Generation Loop
-        const generatedCount = [];
+        // 3. Calculate Times
         const now = new Date();
-        let startDate = new Date(now);
-        startDate.setDate(startDate.getDate() + 1);
-        startDate.setHours(6, 0, 0, 0);
+        const [startHour, startMinute] = startTime.split(':').map(Number);
 
-        for (let day = 0; day < daysCount; day++) {
-            const currentDayStart = new Date(startDate);
-            currentDayStart.setDate(startDate.getDate() + day);
+        // Set to today's date with specified time
+        let startDateTime = new Date(now);
+        startDateTime.setHours(startHour, startMinute, 0, 0);
 
-            const streamsToday = Math.floor(Math.random() * (maxStreamsPerDay - minStreamsPerDay + 1)) + minStreamsPerDay;
-            let nextStartTime = new Date(currentDayStart);
-
-            for (let i = 0; i < streamsToday; i++) {
-                const durationHours = (Math.random() * (maxDurationHours - minDurationHours) + minDurationHours);
-                const durationSeconds = Math.floor(durationHours * 3600);
-
-                const streamStartTime = new Date(nextStartTime);
-                const streamEndTime = new Date(streamStartTime.getTime() + durationSeconds * 1000);
-
-                let rotationName = `Smart - ${streamStartTime.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} ${streamStartTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
-
-                let displayTitle = '';
-                if (customTitles && customTitles.length > 0) {
-                    displayTitle = customTitles[Math.floor(Math.random() * customTitles.length)];
-                }
-
-                // Create Rotation Record
-                const rotation = await Rotation.create({
-                    user_id: userId,
-                    name: rotationName,
-                    youtube_channel_id: channelId,
-                    start_time: streamStartTime.toISOString().replace('Z', ''),
-                    end_time: streamEndTime.toISOString().replace('Z', ''),
-                    repeat_mode: repeatMode,
-                    status: 'active',
-                    is_loop: true,
-                    gap_minutes: 0
-                });
-
-                // Pick Content
-                let targetId = '';
-                let targetTitle = '';
-                let targetDesc = '';
-                let contentThumbnailFallback = null;
-
-                if (contentType === 'playlist' && !sourcePlaylistId) {
-                    // Legacy: Pick a random playlist as the content
-                    const pl = contentPool[Math.floor(Math.random() * contentPool.length)];
-                    targetId = `playlist:${pl.id}`;
-                    targetTitle = pl.name;
-                    targetDesc = pl.description || '';
-                    if (pl.thumbnails) {
-                        contentThumbnailFallback = pl.thumbnails.split(',')[0];
-                    }
-                } else {
-                    // Video Source (Either from 'sourcePlaylistId' videos OR 'All Videos')
-                    // We need to pick enough videos to fill the duration?
-                    // User request: "video dari playlist" (videos from playlist).
-                    // If we pick just ONE video, it might loop.
-                    // If we want a "Rotation Item" to be a playlist of videos, we need to create a TEMP playlist or use single video.
-                    // Rotations support single video or playlist ID.
-
-                    // Strategy: Pick 1 random video from the pool and loop it (simple),
-                    // OR pick a random subset and create a TEMP playlist?
-                    // "Item ... video berbeda lagi" => Different videos for each rotation item.
-                    // If I pick 1 video, it will loop for 3-8 hours.
-                    // If I pick multiple, I need to create a playlist.
-
-                    // Let's create a temp playlist to be safe and ensure variety if pool is large.
-
-                    const videosToAdd = [];
-                    let currentPlaylistDuration = 0;
-                    let safety = 0;
-
-                    // Shuffle pool snippet
-                    const poolCopy = [...contentPool];
-
-                    while (currentPlaylistDuration < durationSeconds && safety < 100 && poolCopy.length > 0) {
-                        const randIdx = Math.floor(Math.random() * poolCopy.length);
-                        const vid = poolCopy[randIdx];
-                        videosToAdd.push(vid);
-                        currentPlaylistDuration += (vid.duration || 300); // fallback duration
-                        // poolCopy.splice(randIdx, 1); // Allow repeats? maybe yes, maybe no. Let's allow repeats for infinite duration.
-                        safety++;
-                    }
-
-                    if (videosToAdd.length > 0) {
-                        // Create Temp Playlist
-                        const playlistName = `SmartGen ${rotation.id.slice(0, 4)}`;
-                        const newPlaylist = await Playlist.create({
-                            name: playlistName,
-                            description: 'Auto-generated for Smart Rotation',
-                            is_shuffle: 0,
-                            user_id: userId,
-                            youtube_channel_id: channelId
-                        });
-
-                        // Add videos to playlist
-                        // Limitation: DB calls inside loop. Optimization: Batch insert if possible, but existing API is one-by-one.
-                        // We'll limit max videos to avoid slow generation.
-                        const maxVideos = 20; // Cap at 20 videos per rotation item to prevent huge delays
-                        for (let pos = 0; pos < Math.min(videosToAdd.length, maxVideos); pos++) {
-                            await Playlist.addVideo(newPlaylist.id, videosToAdd[pos].id, pos + 1);
-                        }
-
-                        targetId = `playlist:${newPlaylist.id}`;
-                        targetTitle = videosToAdd[0].title;
-                        contentThumbnailFallback = videosToAdd[0].thumbnail_path;
-                    } else {
-                        // Fallback simple
-                        const vid = contentPool[Math.floor(Math.random() * contentPool.length)];
-                        targetId = vid.id;
-                        targetTitle = vid.title;
-                        contentThumbnailFallback = vid.thumbnail_path;
-                    }
-                }
-
-                if (displayTitle) {
-                    targetTitle = displayTitle;
-                }
-
-                // Select Thumbnail Logic
-                let selectedThumbnailPath = null;
-                if (thumbnailMode === 'gallery' && galleryThumbnails.length > 0) {
-                    selectedThumbnailPath = galleryThumbnails[Math.floor(Math.random() * galleryThumbnails.length)].filepath;
-                } else if (thumbnailMode === 'video') {
-                    selectedThumbnailPath = contentThumbnailFallback;
-                } else {
-                    // 'auto' mode: Gallery preferred, Video fallback
-                    if (galleryThumbnails.length > 0) {
-                        selectedThumbnailPath = galleryThumbnails[Math.floor(Math.random() * galleryThumbnails.length)].filepath;
-                    } else {
-                        selectedThumbnailPath = contentThumbnailFallback;
-                    }
-                }
-
-                // Add Item to Rotation
-                await Rotation.addItem({
-                    rotation_id: rotation.id,
-                    order_index: i,
-                    video_id: targetId, // This is now 'playlist:UUID'
-                    title: targetTitle,
-                    description: targetDesc,
-                    tags: 'smart-rotation',
-                    privacy: privacy,
-                    category: '10',
-                    thumbnail_path: selectedThumbnailPath,
-                    original_thumbnail_path: selectedThumbnailPath
-                });
-
-                generatedCount.push(rotation.id);
-                nextStartTime = new Date(streamEndTime.getTime() + 5 * 60000); // 5 min gap
-            }
+        // If start time has passed today, schedule for tomorrow
+        if (startDateTime <= now) {
+            startDateTime.setDate(startDateTime.getDate() + 1);
         }
 
-        return { success: true, count: generatedCount.length };
+        const durationSeconds = Math.floor(durationHours * 3600);
+        const endDateTime = new Date(startDateTime.getTime() + durationSeconds * 1000);
+
+        // 4. Create Rotation Record
+        const rotationName = `Smart - ${startDateTime.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} ${startDateTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+
+        const rotation = await Rotation.create({
+            user_id: userId,
+            name: rotationName,
+            youtube_channel_id: channelId,
+            start_time: startDateTime.toISOString().replace('Z', ''),
+            end_time: endDateTime.toISOString().replace('Z', ''),
+            repeat_mode: repeatMode,
+            status: 'active',
+            is_loop: true,
+            gap_minutes: 0
+        });
+
+        console.log('[AutoScheduler] Created rotation:', rotation.id);
+
+        // 5. Fill Duration with Multiple Items
+        const targetDuration = durationSeconds;
+        let accumulatedDuration = 0;
+        let itemIndex = 0;
+        const maxItems = 100; // Safety limit
+
+        while (accumulatedDuration < targetDuration && itemIndex < maxItems) {
+            // Pick video from pool (random for variety)
+            const video = contentPool[Math.floor(Math.random() * contentPool.length)];
+            if (!video) break;
+
+            const videoDuration = video.duration || 300; // Default 5 minutes if unknown
+
+            // Title: Loop through custom titles if provided
+            let itemTitle = video.title;
+            if (customTitles && customTitles.length > 0) {
+                itemTitle = customTitles[itemIndex % customTitles.length];
+            }
+
+            // Thumbnail: Loop through gallery thumbnails if available
+            let itemThumbnail = video.thumbnail_path;
+            if (thumbnailMode === 'gallery' && galleryThumbnails.length > 0) {
+                const thumb = galleryThumbnails[itemIndex % galleryThumbnails.length];
+                itemThumbnail = thumb.filepath;
+            }
+
+            // Add item to rotation
+            await Rotation.addItem({
+                rotation_id: rotation.id,
+                order_index: itemIndex,
+                video_id: video.id,
+                title: itemTitle,
+                description: video.description || '',
+                tags: 'smart-rotation',
+                privacy: privacy,
+                category: '10',
+                thumbnail_path: itemThumbnail,
+                original_thumbnail_path: itemThumbnail
+            });
+
+            accumulatedDuration += videoDuration;
+            itemIndex++;
+
+            console.log(`[AutoScheduler] Added item ${itemIndex}: ${itemTitle} (${videoDuration}s, total: ${accumulatedDuration}s/${targetDuration}s)`);
+        }
+
+        console.log(`[AutoScheduler] Generated rotation ${rotation.id} with ${itemIndex} items, total duration: ${accumulatedDuration}s (target: ${targetDuration}s)`);
+
+        return {
+            success: true,
+            count: 1,
+            rotationId: rotation.id,
+            itemCount: itemIndex,
+            message: `Created smart rotation with ${itemIndex} items`
+        };
     }
+}
 }
 
 module.exports = AutoSchedulerService;
