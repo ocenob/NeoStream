@@ -165,6 +165,7 @@ class AutoSchedulerService {
             durationHours = 7,
             minDurationHours = 3, // Default if not provided
             maxDurationHours = 7, // Default if not provided
+            targetItemCount = null, // Optional target count
             sourcePlaylistId = null,
             customTitles = [],
             privacy = 'unlisted',
@@ -221,7 +222,20 @@ class AutoSchedulerService {
         let itemIndex = 0;
         const itemsToAdd = [];
 
-        while (accumulatedDuration < durationSeconds && itemIndex < 100) {
+        // Determine Loop Condition
+        const useItemCountMode = (targetItemCount && parseInt(targetItemCount) > 0);
+        const limitCount = useItemCountMode ? parseInt(targetItemCount) : 100;
+
+        console.log(`[Auto] Mode: ${useItemCountMode ? 'Item Count (' + limitCount + ')' : 'Time Duration (' + durationSeconds + 's)'}`);
+
+        while (true) {
+            // Break Conditions
+            if (useItemCountMode) {
+                if (itemIndex >= limitCount) break;
+            } else {
+                if (accumulatedDuration >= durationSeconds) break;
+                if (itemIndex >= 100) break; // Safety hard limit
+            }
             // Pick RANDOM playlist
             const randomPlaylistMeta = allPlaylists[Math.floor(Math.random() * allPlaylists.length)];
 
@@ -240,13 +254,15 @@ class AutoSchedulerService {
             // Calculate target duration for this item
             let targetItemDuration = Math.floor(Math.random() * (maxDur - minDur + 1)) + minDur + randomOffset;
 
-            // Cap at remaining duration
-            let remaining = durationSeconds - accumulatedDuration;
-            if (targetItemDuration > remaining) {
-                targetItemDuration = remaining;
-            } else if (remaining - targetItemDuration < 1800) {
-                // If leaving a tiny gap (<30m), just fill it all now
-                targetItemDuration = remaining;
+            // Cap at remaining duration (Only in Time Mode)
+            if (!useItemCountMode) {
+                let remaining = durationSeconds - accumulatedDuration;
+                if (targetItemDuration > remaining) {
+                    targetItemDuration = remaining;
+                } else if (remaining - targetItemDuration < 1800) {
+                    // If leaving a tiny gap (<30m), just fill it all now
+                    targetItemDuration = remaining;
+                }
             }
 
             // Assign Sequential Title
@@ -277,6 +293,15 @@ class AutoSchedulerService {
 
             accumulatedDuration += targetItemDuration;
             itemIndex++;
+        }
+
+        // If in Item Count Mode, update the Rotation End Time
+        if (useItemCountMode) {
+            const newEndTime = new Date(streamStartTime.getTime() + accumulatedDuration * 1000);
+            await Rotation.update(rotation.id, {
+                end_time: newEndTime.toISOString().replace('Z', '')
+            });
+            console.log(`[Auto] Updated Rotation End Time to ${newEndTime.toISOString()} (Total Items: ${itemsToAdd.length})`);
         }
 
         // 6. Bulk Add Items to Rotation
