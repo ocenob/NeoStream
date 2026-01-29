@@ -191,6 +191,42 @@ class AutoSchedulerService {
                 const shuffled = [...poolHours].sort(() => 0.5 - Math.random());
                 const selectedHours = shuffled.slice(0, dailyCount);
 
+                // If pool ran out but we still need more streams to meet dailyCount
+                if (selectedHours.length < dailyCount) {
+                    // Phase 1: Try adding +30 mins offset to existing selected Peak Hours (Density Stacking)
+                    // If 20:00 is peak, try adding 20:30 before adding random 03:00.
+                    for (const peakTime of [...selectedHours]) {
+                        if (selectedHours.length >= dailyCount) break;
+
+                        const [h, m] = peakTime.split(':').map(Number);
+                        const date = new Date();
+                        date.setHours(h, m + 30, 0, 0); // Add 30 mins
+
+                        const newH = String(date.getHours()).padStart(2, '0');
+                        const newM = String(date.getMinutes()).padStart(2, '0');
+                        const newTimeStr = `${newH}:${newM}`;
+
+                        if (!selectedHours.includes(newTimeStr)) {
+                            selectedHours.push(newTimeStr);
+                            console.log(`[Auto] Added Offset Stream: ${newTimeStr} (derived from ${peakTime})`);
+                        }
+                    }
+                }
+
+                while (selectedHours.length < dailyCount) {
+                    // Generate a random hour not already in selectedHours
+                    const h = Math.floor(Math.random() * 24);
+                    // Let's stick to :00 or :30 to keep it clean
+                    const minute = Math.random() > 0.5 ? '30' : '00';
+                    const timeStr = `${String(h).padStart(2, '0')}:${minute}`;
+
+                    if (!selectedHours.includes(timeStr)) {
+                        selectedHours.push(timeStr);
+                    }
+                    // Safety break if we are full (24h)
+                    if (selectedHours.length >= 24) break;
+                }
+
                 // If we need more than pool has, just reuse/add random offsets? 
                 // For simplified logic, if dailyCount > pool, we might just take all pool + some randoms?
                 // For now assuming pool is sufficient or we cycle.
