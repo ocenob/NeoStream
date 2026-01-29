@@ -381,7 +381,10 @@ class AutoSchedulerService {
         const useItemCountMode = (targetItemCount && parseInt(targetItemCount) > 0);
         const limitCount = useItemCountMode ? parseInt(targetItemCount) : 100;
 
-        console.log(`[Auto] Mode: ${useItemCountMode ? 'Item Count (' + limitCount + ')' : 'Time Duration (' + durationSeconds + 's)'}`);
+        console.log(`[Auto] Generating Rotation: ${rotationName}`);
+        console.log(`[Auto] Duration: ${durationHours}h (${durationSeconds}s)`);
+        console.log(`[Auto] Mode: ${useItemCountMode ? 'Item Count (' + limitCount + ')' : 'Time Duration'}`);
+        if (useItemCountMode) console.log(`[Auto] Target Item Count RAW: ${targetItemCount}`);
 
         while (true) {
             // Break Conditions
@@ -401,18 +404,11 @@ class AutoSchedulerService {
             let minDur = parseFloat(minDurationHours) * 3600;
             let maxDur = parseFloat(maxDurationHours) * 3600;
 
-            // Fix for High Item Count: If user wants 50 items in 5 hours, we can't use 3-hour minimums.
-            if (useItemCountMode) {
-                // Calculate average needed duration
-                const avgDurationNeeded = durationSeconds / limitCount;
-                // Set bounds around this average
-                minDur = avgDurationNeeded * 0.8;
-                maxDur = avgDurationNeeded * 1.2;
-                console.log(`[Auto] Adjusting Item Duration for Target Count ${limitCount}: ${minDur}s - ${maxDur}s`);
-            } else {
-                if (isNaN(minDur)) minDur = 3 * 3600;
-                if (isNaN(maxDur)) maxDur = 7 * 3600;
-            }
+            // Revert Item Count Mode scaling: We WANT long items (Pool Mode)
+            // if (useItemCountMode) { ... } logic removed to support "Sequential Pool"
+
+            if (isNaN(minDur)) minDur = 3 * 3600;
+            if (isNaN(maxDur)) maxDur = 7 * 3600;
 
             // Random offset for uniqueness (seconds)
             let randomOffset = Math.floor(Math.random() * 600); // 0-10m variance
