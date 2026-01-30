@@ -243,8 +243,9 @@ class AutoSchedulerService {
                     const targetDayIndex = (i + 1) % 7; // Convert our i(0-6 Mon-Sun) to JS(0-6 Sun-Sat). i=0(Mon)->1, i=6(Sun)->0
 
                     let daysUntil = (targetDayIndex - currentDay + 7) % 7;
-                    if (daysUntil === 0) daysUntil = 7; // Start next recurrence, not today to be safe? Or today is fine. 
-                    // Let's say if today is Mon and target is Mon, do we schedule today? Yes.
+                    // Removed: if (daysUntil === 0) daysUntil = 7; 
+                    // We WANT it to start TODAY if daysUntil is 0. 
+                    // RotationService will automatically start it if now is within the window.
 
                     targetDate.setDate(targetDate.getDate() + daysUntil);
                     const dateStr = targetDate.toISOString().split('T')[0];
