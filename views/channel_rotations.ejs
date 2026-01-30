@@ -521,243 +521,254 @@
 
                 <!-- Smart Rotation Configuration Modal -->
                 <div id="smartConfigModal"
-                    class="fixed inset-0 flex items-center justify-center z-[60] hidden bg-black/50 backdrop-blur-sm">
-                    <div class="modal-container bg-dark-800 rounded-2xl shadow-2xl w-full max-w-3xl mx-4 border border-gray-700 transform transition-all duration-300 opacity-0 scale-95 flex flex-col"
-                        style="height: 90vh;">
+                    class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] hidden modal-overlay">
+                    <div class="flex h-full justify-center">
+                        <div
+                            class="bg-dark-800 shadow-2xl w-full max-w-3xl modal-container flex flex-col h-full border-x border-gray-700 transition-all duration-300 transform translate-y-full opacity-0">
 
-                        <!-- Header -->
-                        <div class="p-6 pb-2 border-b border-gray-700/50">
-                            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                                <i class="ti ti-brain text-purple-400"></i>
-                                Smart Schedule
-                            </h3>
+                            <!-- Header -->
+                            <div class="p-6 pb-2 border-b border-gray-700/50">
+                                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                    <i class="ti ti-brain text-purple-400"></i>
+                                    Smart Schedule
+                                </h3>
 
-                            <!-- TABS -->
-                            <div class="flex gap-2 bg-dark-900/50 p-1 rounded-lg">
-                                <button onclick="switchSmartTab('single')" id="tab-single"
-                                    class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all bg-purple-600 text-white shadow-lg">
-                                    Single Rotation
+                                <!-- TABS -->
+                                <div class="flex gap-2 bg-dark-900/50 p-1 rounded-lg">
+                                    <button onclick="switchSmartTab('single')" id="tab-single"
+                                        class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all bg-purple-600 text-white shadow-lg">
+                                        Single Rotation
+                                    </button>
+                                    <button onclick="switchSmartTab('batch')" id="tab-batch"
+                                        class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all text-gray-400 hover:text-white hover:bg-dark-700">
+                                        Batch Mode (Auto)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Scrollable Body -->
+                            <div class="p-6 overflow-y-auto custom-scrollbar">
+                                <form id="smartScheduleForm" class="space-y-6">
+
+                                    <!-- SINGLE MODE INPUTS -->
+                                    <div id="panel-single" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-xs text-gray-400 block mb-1.5">Start Time</label>
+                                            <input type="time" name="startTime" id="smartStartTime" value="10:00"
+                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white [color-scheme:dark]">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-400 block mb-1.5">Total Duration
+                                                (Hours)</label>
+                                            <input type="number" name="durationHours" id="smartDuration" value="7"
+                                                min="1" max="24"
+                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                        </div>
+                                    </div>
+
+                                    <!-- BATCH MODE INPUTS -->
+                                    <div id="panel-batch" class="hidden space-y-4">
+                                        <div
+                                            class="bg-purple-500/10 border border-purple-500/20 p-4 rounded-xl space-y-4">
+                                            <!-- Toggle Weekly Pattern -->
+                                            <div class="flex items-center justify-between">
+                                                <div>
+                                                    <label class="text-sm font-bold text-white block">Weekly Pattern
+                                                        Mode</label>
+                                                    <span class="text-[10px] text-gray-400">Randomize daily volume (e.g.
+                                                        5-10 streams/day)</span>
+                                                </div>
+                                                <label class="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" id="weeklyPatternToggle" class="sr-only peer"
+                                                        onchange="toggleWeeklyPattern()">
+                                                    <div
+                                                        class="w-11 h-6 bg-dark-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600">
+                                                    </div>
+                                                </label>
+                                            </div>
+
+                                            <!-- Standard Daily Count (Hidden if Weekly Pattern active) -->
+                                            <div id="standardCountControl">
+                                                <div class="flex justify-between items-center mb-2">
+                                                    <label class="text-xs text-gray-400">Fixed Daily Streams</label>
+                                                    <span id="batchCountDisplay"
+                                                        class="text-lg font-bold text-white">5x</span>
+                                                </div>
+                                                <input type="range" id="batchCountSlider" min="1" max="15" value="5"
+                                                    class="w-full h-2 bg-dark-900 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                                            </div>
+
+                                            <!-- Weekly Range Controls (Visible if Weekly Pattern active) -->
+                                            <div id="weeklyRangeControl" class="hidden grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="text-xs text-gray-400 block mb-1">Min / Day</label>
+                                                    <input type="number" id="minDailyStreams" value="5" min="1" max="20"
+                                                        class="w-full px-2 py-1.5 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white text-center">
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs text-gray-400 block mb-1.5">Max / Day</label>
+                                                    <input type="number" id="maxDailyStreams" value="10" min="1"
+                                                        max="20"
+                                                        class="w-full px-2 py-1.5 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white text-center">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="text-xs text-gray-400 block mb-1.5">Min Stream Duration
+                                                    (Hours)</label>
+                                                <input type="number" id="batchMinDuration" value="3" min="1" max="24"
+                                                    class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-gray-400 block mb-1.5">Max Stream Duration
+                                                    (Hours)</label>
+                                                <input type="number" id="batchMaxDuration" value="7" min="1" max="24"
+                                                    class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-end">
+                                            <button type="button" onclick="autoDetectBestTimes()"
+                                                class="w-full py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all">
+                                                <i class="ti ti-wand"></i> Auto-Detect Best Times
+                                            </button>
+                                        </div>
+
+                                        <!-- Detected Slots Container -->
+                                        <div class="space-y-2">
+                                            <label class="text-xs text-gray-400">Generated Schedule (Start
+                                                Times)</label>
+                                            <div id="batchSlotsContainer"
+                                                class="flex flex-wrap gap-2 min-h-[40px] p-2 bg-dark-900 rounded-lg border border-gray-700/50">
+                                                <span class="text-gray-500 text-xs italic p-1">Click Auto-Detect to
+                                                    generate...</span>
+                                            </div>
+                                            <!-- Hidden Input to store the array -->
+                                            <input type="hidden" id="batchStartTimesJson" name="batchStartTimesJson"
+                                                value="[]">
+                                        </div>
+                                    </div>
+
+                                    <!-- Content Source -->
+                                    <div class="bg-dark-700/30 p-4 rounded-lg border border-gray-700">
+                                        <label class="text-xs text-gray-400 block mb-1.5">Source Playlist</label>
+                                        <select id="smartSourcePlaylist" name="sourcePlaylistId"
+                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white focus:border-purple-500">
+                                            <% if (playlists && playlists.length> 0) { %>
+                                                <% playlists.forEach(p=> { %>
+                                                    <option value="<%= p.id %>">
+                                                        <%= p.name %> (<%= p.video_count %> videos)
+                                                    </option>
+                                                    <% }); %>
+                                                        <% } else { %>
+                                                            <option value="" disabled selected>No playlists available
+                                                            </option>
+                                                            <% } %>
+                                        </select>
+                                    </div>
+
+                                    <!-- Metadata -->
+                                    <div class="space-y-4">
+                                        <div
+                                            class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-dark-700/30 p-4 rounded-lg border border-gray-700">
+                                            <div>
+                                                <label class="text-xs text-gray-400 block mb-1.5">Min Item Duration
+                                                    (Hours)</label>
+                                                <input type="number" name="minDurationHours" value="3" min="1" max="12"
+                                                    step="0.5"
+                                                    class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-gray-400 block mb-1.5">Max Item Duration
+                                                    (Hours)</label>
+                                                <input type="number" name="maxDurationHours" value="7" min="1" max="24"
+                                                    step="0.5"
+                                                    class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="text-xs text-gray-400 block mb-1.5 text-blue-400 font-bold">Target
+                                                    Item Count (Optional)</label>
+                                                <input type="number" name="targetItemCount" placeholder="e.g. 50"
+                                                    min="1" max="500"
+                                                    class="w-full px-3 py-2 bg-dark-900 border border-blue-500/50 rounded-lg text-sm text-white placeholder-gray-600">
+                                                <p class="text-[10px] text-gray-500 mt-1">If set, overrides Total
+                                                    Duration
+                                                    limit.</p>
+                                            </div>
+                                            <div class="flex items-end">
+                                                <p class="text-[10px] text-gray-500 pb-2">Set this to <b>50</b> to
+                                                    generate
+                                                    exactly 50 items with random durations.</p>
+                                            </div>
+                                            <p class="col-span-2 text-[10px] text-gray-500">Each item will have a random
+                                                duration within this range.</p>
+                                        </div>
+
+                                        <div>
+                                            <label class="text-xs text-gray-400 block mb-1.5">Custom Titles (One per
+                                                line)</label>
+                                            <textarea name="customTitles" rows="5"
+                                                placeholder="Title #1&#10;Title #2&#10;Title #3"
+                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-xs text-white leading-relaxed resize-none"></textarea>
+                                            <p class="text-[10px] text-gray-500 mt-1">Titles and gallery thumbnails will
+                                                be
+                                                assigned
+                                                sequentially to items.</p>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="text-xs text-gray-400 block mb-1.5">Privacy</label>
+                                                <select name="privacy"
+                                                    class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                                    <option value="public">Public</option>
+                                                    <option value="unlisted" selected>Unlisted</option>
+                                                    <option value="private">Private</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-gray-400 block mb-1.5">Repeat Mode</label>
+                                                <select name="repeatMode"
+                                                    class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                                    <option value="daily" selected>Daily</option>
+                                                    <option value="none">No Repeat</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="text-xs text-gray-400 block mb-1.5">Custom Description
+                                                (Applied to
+                                                ALL items)</label>
+                                            <textarea name="customDescription" rows="3"
+                                                placeholder="Enter a description for all generated streams..."
+                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-xs text-white leading-relaxed resize-none"></textarea>
+                                        </div>
+
+                                        <div>
+                                            <label class="text-xs text-gray-400 block mb-1.5">Tags (Comma
+                                                separated)</label>
+                                            <input type="text" name="customTags" placeholder="gaming, live, 24/7"
+                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="p-6 pt-0 flex justify-end gap-3 mt-4 border-t border-gray-700 pt-4">
+                                <button onclick="closeSmartConfigModal()"
+                                    class="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-dark-700 transition-colors">
+                                    Cancel
                                 </button>
-                                <button onclick="switchSmartTab('batch')" id="tab-batch"
-                                    class="flex-1 py-1.5 text-xs font-bold rounded-md transition-all text-gray-400 hover:text-white hover:bg-dark-700">
-                                    Batch Mode (Auto)
+                                <button onclick="confirmSmartGeneration()"
+                                    class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:shadow-lg hover:shadow-purple-500/20 transition-all transform hover:scale-105">
+                                    <i class="ti ti-wand mr-1"></i> Generate
                                 </button>
                             </div>
-                        </div>
-
-                        <!-- Scrollable Body -->
-                        <div class="p-6 overflow-y-auto custom-scrollbar">
-                            <form id="smartScheduleForm" class="space-y-6">
-
-                                <!-- SINGLE MODE INPUTS -->
-                                <div id="panel-single" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="text-xs text-gray-400 block mb-1.5">Start Time</label>
-                                        <input type="time" name="startTime" id="smartStartTime" value="10:00"
-                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white [color-scheme:dark]">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs text-gray-400 block mb-1.5">Total Duration (Hours)</label>
-                                        <input type="number" name="durationHours" id="smartDuration" value="7" min="1"
-                                            max="24"
-                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
-                                    </div>
-                                </div>
-
-                                <!-- BATCH MODE INPUTS -->
-                                <div id="panel-batch" class="hidden space-y-4">
-                                    <div class="bg-purple-500/10 border border-purple-500/20 p-4 rounded-xl space-y-4">
-                                        <!-- Toggle Weekly Pattern -->
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <label class="text-sm font-bold text-white block">Weekly Pattern
-                                                    Mode</label>
-                                                <span class="text-[10px] text-gray-400">Randomize daily volume (e.g.
-                                                    5-10 streams/day)</span>
-                                            </div>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" id="weeklyPatternToggle" class="sr-only peer"
-                                                    onchange="toggleWeeklyPattern()">
-                                                <div
-                                                    class="w-11 h-6 bg-dark-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600">
-                                                </div>
-                                            </label>
-                                        </div>
-
-                                        <!-- Standard Daily Count (Hidden if Weekly Pattern active) -->
-                                        <div id="standardCountControl">
-                                            <div class="flex justify-between items-center mb-2">
-                                                <label class="text-xs text-gray-400">Fixed Daily Streams</label>
-                                                <span id="batchCountDisplay"
-                                                    class="text-lg font-bold text-white">5x</span>
-                                            </div>
-                                            <input type="range" id="batchCountSlider" min="1" max="15" value="5"
-                                                class="w-full h-2 bg-dark-900 rounded-lg appearance-none cursor-pointer accent-purple-500">
-                                        </div>
-
-                                        <!-- Weekly Range Controls (Visible if Weekly Pattern active) -->
-                                        <div id="weeklyRangeControl" class="hidden grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="text-xs text-gray-400 block mb-1">Min / Day</label>
-                                                <input type="number" id="minDailyStreams" value="5" min="1" max="20"
-                                                    class="w-full px-2 py-1.5 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white text-center">
-                                            </div>
-                                            <div>
-                                                <label class="text-xs text-gray-400 block mb-1.5">Max / Day</label>
-                                                <input type="number" id="maxDailyStreams" value="10" min="1" max="20"
-                                                    class="w-full px-2 py-1.5 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white text-center">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="text-xs text-gray-400 block mb-1.5">Min Stream Duration
-                                                (Hours)</label>
-                                            <input type="number" id="batchMinDuration" value="3" min="1" max="24"
-                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
-                                        </div>
-                                        <div>
-                                            <label class="text-xs text-gray-400 block mb-1.5">Max Stream Duration
-                                                (Hours)</label>
-                                            <input type="number" id="batchMaxDuration" value="7" min="1" max="24"
-                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
-                                        </div>
-                                    </div>
-
-                                    <div class="flex items-end">
-                                        <button type="button" onclick="autoDetectBestTimes()"
-                                            class="w-full py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all">
-                                            <i class="ti ti-wand"></i> Auto-Detect Best Times
-                                        </button>
-                                    </div>
-
-                                    <!-- Detected Slots Container -->
-                                    <div class="space-y-2">
-                                        <label class="text-xs text-gray-400">Generated Schedule (Start Times)</label>
-                                        <div id="batchSlotsContainer"
-                                            class="flex flex-wrap gap-2 min-h-[40px] p-2 bg-dark-900 rounded-lg border border-gray-700/50">
-                                            <span class="text-gray-500 text-xs italic p-1">Click Auto-Detect to
-                                                generate...</span>
-                                        </div>
-                                        <!-- Hidden Input to store the array -->
-                                        <input type="hidden" id="batchStartTimesJson" name="batchStartTimesJson"
-                                            value="[]">
-                                    </div>
-                                </div>
-
-                                <!-- Content Source -->
-                                <div class="bg-dark-700/30 p-4 rounded-lg border border-gray-700">
-                                    <label class="text-xs text-gray-400 block mb-1.5">Source Playlist</label>
-                                    <select id="smartSourcePlaylist" name="sourcePlaylistId"
-                                        class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white focus:border-purple-500">
-                                        <% if (playlists && playlists.length> 0) { %>
-                                            <% playlists.forEach(p=> { %>
-                                                <option value="<%= p.id %>">
-                                                    <%= p.name %> (<%= p.video_count %> videos)
-                                                </option>
-                                                <% }); %>
-                                                    <% } else { %>
-                                                        <option value="" disabled selected>No playlists available
-                                                        </option>
-                                                        <% } %>
-                                    </select>
-                                </div>
-
-                                <!-- Metadata -->
-                                <div class="space-y-4">
-                                    <div
-                                        class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-dark-700/30 p-4 rounded-lg border border-gray-700">
-                                        <div>
-                                            <label class="text-xs text-gray-400 block mb-1.5">Min Item Duration
-                                                (Hours)</label>
-                                            <input type="number" name="minDurationHours" value="3" min="1" max="12"
-                                                step="0.5"
-                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
-                                        </div>
-                                        <div>
-                                            <label class="text-xs text-gray-400 block mb-1.5">Max Item Duration
-                                                (Hours)</label>
-                                            <input type="number" name="maxDurationHours" value="7" min="1" max="24"
-                                                step="0.5"
-                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
-                                        </div>
-                                        <div>
-                                            <label
-                                                class="text-xs text-gray-400 block mb-1.5 text-blue-400 font-bold">Target
-                                                Item Count (Optional)</label>
-                                            <input type="number" name="targetItemCount" placeholder="e.g. 50" min="1"
-                                                max="500"
-                                                class="w-full px-3 py-2 bg-dark-900 border border-blue-500/50 rounded-lg text-sm text-white placeholder-gray-600">
-                                            <p class="text-[10px] text-gray-500 mt-1">If set, overrides Total Duration
-                                                limit.</p>
-                                        </div>
-                                        <div class="flex items-end">
-                                            <p class="text-[10px] text-gray-500 pb-2">Set this to <b>50</b> to generate
-                                                exactly 50 items with random durations.</p>
-                                        </div>
-                                        <p class="col-span-2 text-[10px] text-gray-500">Each item will have a random
-                                            duration within this range.</p>
-                                    </div>
-
-                                    <div>
-                                        <label class="text-xs text-gray-400 block mb-1.5">Custom Titles (One per
-                                            line)</label>
-                                        <textarea name="customTitles" rows="5"
-                                            placeholder="Title #1&#10;Title #2&#10;Title #3"
-                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-xs text-white leading-relaxed resize-none"></textarea>
-                                        <p class="text-[10px] text-gray-500 mt-1">Titles and gallery thumbnails will be
-                                            assigned
-                                            sequentially to items.</p>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="text-xs text-gray-400 block mb-1.5">Privacy</label>
-                                            <select name="privacy"
-                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
-                                                <option value="public">Public</option>
-                                                <option value="unlisted" selected>Unlisted</option>
-                                                <option value="private">Private</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="text-xs text-gray-400 block mb-1.5">Repeat Mode</label>
-                                            <select name="repeatMode"
-                                                class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
-                                                <option value="daily" selected>Daily</option>
-                                                <option value="none">No Repeat</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label class="text-xs text-gray-400 block mb-1.5">Custom Description (Applied to
-                                            ALL items)</label>
-                                        <textarea name="customDescription" rows="3"
-                                            placeholder="Enter a description for all generated streams..."
-                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-xs text-white leading-relaxed resize-none"></textarea>
-                                    </div>
-
-                                    <div>
-                                        <label class="text-xs text-gray-400 block mb-1.5">Tags (Comma separated)</label>
-                                        <input type="text" name="customTags" placeholder="gaming, live, 24/7"
-                                            class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-sm text-white">
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-
-                        <!-- Footer -->
-                        <div class="p-6 pt-0 flex justify-end gap-3 mt-4 border-t border-gray-700 pt-4">
-                            <button onclick="closeSmartConfigModal()"
-                                class="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-dark-700 transition-colors">
-                                Cancel
-                            </button>
-                            <button onclick="confirmSmartGeneration()"
-                                class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:shadow-lg hover:shadow-purple-500/20 transition-all transform hover:scale-105">
-                                <i class="ti ti-wand mr-1"></i> Generate
-                            </button>
                         </div>
                     </div>
                 </div>
