@@ -463,10 +463,20 @@ class AutoSchedulerService {
                 }
             }
 
-            // Assign Sequential Title
+            // Assign Sequential Title (Randomized Start per Rotation)
+            // We need a randomized offset for this entire rotation to avoid all rotations starting with Title 1
+            // But we are inside the item loop. We should compute offset OUTSIDE the loop.
+            // Wait, we can just use Math.random inside? No, we want sequential relative to start.
+            // Let's use a hashed offset based on rotation ID or just random per rotation iteration?
+            // Actually, we are inside `generateBatchRotations`, looping `results`.
+            // `generateRotations` (this function) is called ONCE per rotation? 
+            // Yes. So we can just init a random offset at top of function?
+            // Let's look at where `generateRotations` starts.
+            // Actually, simply doing:
+            let titleOffset = Math.floor(Math.random() * customTitles.length);
             let title = randomPlaylistMeta.name;
             if (customTitles.length > 0) {
-                title = customTitles[itemIndex % customTitles.length];
+                title = customTitles[(itemIndex + titleOffset) % customTitles.length];
             }
 
             // Assign Sequential Thumbnail
@@ -495,6 +505,11 @@ class AutoSchedulerService {
         }
 
         // If in Item Count Mode, update the Rotation End Time
+        // REMOVED: Do NOT extend Rotation End Time based on Pool Duration. 
+        // The Rotation should solely represent the "Daily Window" (e.g. 4 hours).
+        // The items will be consumed sequentially over weeks.
+
+        /* 
         if (useItemCountMode) {
             const newEndTime = new Date(streamStartTime.getTime() + accumulatedDuration * 1000);
             await Rotation.update(rotation.id, {
@@ -502,6 +517,7 @@ class AutoSchedulerService {
             });
             console.log(`[Auto] Updated Rotation End Time to ${toLocalISO(newEndTime)} (Total Items: ${itemsToAdd.length})`);
         }
+        */
 
         // 6. Bulk Add Items to Rotation
         for (let i = 0; i < itemsToAdd.length; i++) {
