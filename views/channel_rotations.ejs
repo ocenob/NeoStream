@@ -994,19 +994,7 @@
 
                             const weeklyActive = document.getElementById('weeklyPatternToggle').checked;
 
-                            // If NOT Weekly Pattern, we need Auto-Detect times
-                            if (!weeklyActive && startTimes.length === 0) {
-                                return showToast('error', 'Please run Auto-Detect first!');
-                            }
-
-                            // If Weekly Pattern IS active, we don't strictly need startTimes from auto-detect immediately
-                            // BUT best practice is to still use them as a "pool" of good hours.
-                            // However, user might just want random times?
-                            // Let's enforce auto-detect for now to get the "Good Hours" pool.
-                            if (weeklyActive && startTimes.length === 0) {
-                                // Auto-detect silently if missing? No, user should click it.
-                                return showToast('error', 'Please run Auto-Detect to find best hours pool!');
-                            }
+                            // startTimes is optional, backend uses defaults if empty
 
                             data.startTimes = startTimes;
                             // Removed crashed redundant duration accesses
