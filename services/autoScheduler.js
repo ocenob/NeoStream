@@ -259,10 +259,10 @@ class AutoSchedulerService {
                         repeatMode: 'weekly'
                     };
 
-                    // ... (Random Duration Logic same as below)
-                    if (config.batchMinDuration && config.batchMaxDuration) {
-                        const min = config.batchMinDuration;
-                        const max = config.batchMaxDuration;
+                    // Random Duration Logic 
+                    if (config.minDurationHours && config.maxDurationHours) {
+                        const min = config.minDurationHours;
+                        const max = config.maxDurationHours;
                         let randomDuration = Math.random() * (max - min) + min;
                         randomDuration = Math.round(randomDuration * 2) / 2;
                         itemConfig.durationHours = randomDuration;
