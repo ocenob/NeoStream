@@ -388,8 +388,9 @@ class AutoSchedulerService {
 
         // 4. Create Rotation Record
         const seedPlaylistName = allPlaylists.find(p => p.id == sourcePlaylistId)?.name || allPlaylists[0].name;
-        const repeatLabel = repeatMode === 'weekly' ? `(Weekly ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][streamStartTime.getDay()]})` : '';
-        const rotationName = `Smart - ${startTime} ${repeatLabel} (${durationHours}h) - ${seedPlaylistName} Mix`;
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayName = dayNames[streamStartTime.getDay()];
+        const rotationName = `${dayName} - ${startTime} - ${durationHours}h - ${seedPlaylistName}`;
 
         // Helper to format Date to Local ISO String (YYYY-MM-DDTHH:mm:ss)
         const toLocalISO = (date) => {
