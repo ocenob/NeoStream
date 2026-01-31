@@ -415,6 +415,10 @@ class AutoSchedulerService {
         let itemIndex = 0;
         const itemsToAdd = [];
 
+        // RANDOM OFFSETS: Ensure different rotations start from different points in the pool
+        const thumbOffset = galleryThumbnails.length > 0 ? Math.floor(Math.random() * galleryThumbnails.length) : 0;
+        const globalTitleOffset = customTitles.length > 0 ? Math.floor(Math.random() * customTitles.length) : 0;
+
         // Determine Loop Condition
         const useItemCountMode = (targetItemCount && parseInt(targetItemCount) > 0);
         const limitCount = useItemCountMode ? parseInt(targetItemCount) : 100;
@@ -475,10 +479,11 @@ class AutoSchedulerService {
             // Yes. So we can just init a random offset at top of function?
             // Let's look at where `generateRotations` starts.
             // Actually, simply doing:
-            let titleOffset = Math.floor(Math.random() * customTitles.length);
+            // Assign Sequential Title (Randomized Start per Rotation)
             let title = randomPlaylistMeta.name;
             if (customTitles.length > 0) {
-                title = customTitles[(itemIndex + titleOffset) % customTitles.length];
+                // Use globalTitleOffset to ensure different rotations won't all start with Title #1
+                title = customTitles[(itemIndex + globalTitleOffset) % customTitles.length];
             }
 
             // Assign Sequential Thumbnail
@@ -489,7 +494,8 @@ class AutoSchedulerService {
 
             // Priority: Gallery Thumbnails (Strictly Channel Specific)
             if (galleryThumbnails.length > 0) {
-                const thumb = galleryThumbnails[itemIndex % galleryThumbnails.length];
+                // ADDED OFFSET: Use thumbOffset to ensure different rotations start with different thumbnails
+                const thumb = galleryThumbnails[(itemIndex + thumbOffset) % galleryThumbnails.length];
                 thumbPath = thumb.filepath;
             }
 
