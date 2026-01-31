@@ -1004,7 +1004,8 @@ app.get('/dashboard/:slug/videos', isAuthenticated, async (req, res) => {
       user,
       channel,
       files: actualVideos,
-      mediaType: 'video'
+      mediaType: 'video',
+      csrfToken: req.csrfToken()
     });
   } catch (e) { console.error(e); res.redirect('/dashboard'); }
 });
@@ -1083,7 +1084,8 @@ app.get('/dashboard/:slug/thumbnails', isAuthenticated, async (req, res) => {
       user,
       channel,
       files: thumbnails,
-      mediaType: 'image'
+      mediaType: 'image',
+      csrfToken: req.csrfToken()
     });
   } catch (e) {
     console.error('Error in thumbnails route:', e);

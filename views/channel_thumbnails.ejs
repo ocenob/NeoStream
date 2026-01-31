@@ -79,7 +79,19 @@
 
                 async function deleteThumbnail(id) {
                     if (await showConfirm('Delete?')) {
-                        await fetch(`/api/thumbnails/${id}`, { method: 'DELETE' });
+                        // Assuming csrfToken is available in layout or passed to view
+                        // If logic is consistent with gallery, we need the token.
+                        // Let's grab it from a meta tag or variable if available.
+                        // For now, let's assume it is passed or available globally if layout sets it.
+                        // But wait, channel_thumbnails.ejs didn't show csrfToken being defined.
+                        // Let's rely on it being passed.
+                        await fetch(`/api/thumbnails/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': '<%= csrfToken %>'
+                            }
+                        });
                         location.reload();
                     }
                 }

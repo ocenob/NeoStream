@@ -834,7 +834,7 @@
                         document.body.insertAdjacentHTML('beforeend', modalHTML);
                     }
 
-                        <!-- Rename Modal -->
+                    <!-- Rename Modal -->
                     // Inject Rename Modal
                     const renameModalHTML = `
                     <div id="renameModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden modal-overlay flex items-center justify-center p-4">
@@ -871,11 +871,11 @@
                     `;
                     document.body.insertAdjacentHTML('beforeend', renameModalHTML);
 
-                    window.renameFile = function(id, currentTitle) {
+                    window.renameFile = function (id, currentTitle) {
                         const modal = document.getElementById('renameModal');
                         const input = document.getElementById('renameInput');
                         const itemId = document.getElementById('renameItemId');
-                        
+
                         if (modal && input && itemId) {
                             itemId.value = id;
                             input.value = currentTitle;
@@ -884,19 +884,19 @@
                         }
                     }
 
-                    window.closeRenameModal = function() {
+                    window.closeRenameModal = function () {
                         const modal = document.getElementById('renameModal');
                         if (modal) modal.classList.add('hidden');
                     }
 
-                    window.handleRenameSubmit = async function(e) {
+                    window.handleRenameSubmit = async function (e) {
                         e.preventDefault();
                         const id = document.getElementById('renameItemId').value;
                         const newTitle = document.getElementById('renameInput').value.trim();
                         const submitBtn = e.target.querySelector('button[type="submit"]');
 
                         if (!newTitle) return;
-                        
+
                         const originalBtnText = submitBtn.innerHTML;
                         submitBtn.disabled = true;
                         submitBtn.innerHTML = '<i class="ti ti-loader animate-spin mr-2"></i>Saving...';
@@ -908,9 +908,9 @@
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ title: newTitle })
                             });
-                            
+
                             const data = await res.json();
-                            
+
                             if (data.success) {
                                 window.showToast('success', 'Renamed successfully');
                                 closeRenameModal();
@@ -928,7 +928,7 @@
                         }
                     }
 
-                    document.addEventListener('click', function(e) {
+                    document.addEventListener('click', function (e) {
                         const modal = document.getElementById('renameModal');
                         if (modal && e.target === modal) closeRenameModal();
                     });
@@ -937,8 +937,17 @@
                         if (!(await window.showConfirm(`Delete ${title}?`))) return;
                         try {
                             const endpoint = mediaType === 'image' ? `/api/thumbnails/${id}` : `/api/videos/${id}`;
-                            await fetch(endpoint, { method: 'DELETE' });
+                            await fetch(endpoint, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-Token': csrfToken
+                                }
+                            });
                             location.reload();
-                        } catch (e) { console.error(e); }
+                        } catch (e) {
+                            console.error(e);
+                            window.showToast('error', 'Failed to delete file');
+                        }
                     }
                 </script>
