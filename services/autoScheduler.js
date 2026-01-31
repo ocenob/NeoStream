@@ -174,7 +174,7 @@ class AutoSchedulerService {
             console.log('[AutoScheduler] Mode: Weekly Pattern');
             const minDaily = config.minDailyStreams;
             const maxDaily = config.maxDailyStreams;
-            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 
             // Available "Best Hours" pool usually passed in startTimes (e.g. 24 top hours)
             // If empty, we can fallback to a generic set
@@ -388,7 +388,7 @@ class AutoSchedulerService {
 
         // 4. Create Rotation Record
         const seedPlaylistName = allPlaylists.find(p => p.id == sourcePlaylistId)?.name || allPlaylists[0].name;
-        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         const dayName = dayNames[streamStartTime.getDay()];
         const rotationName = `${dayName} - ${startTime} - ${durationHours}h - ${seedPlaylistName}`;
 
