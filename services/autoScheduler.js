@@ -305,8 +305,24 @@ class AutoSchedulerService {
         for (const time of startTimes) {
             console.log(`[AutoScheduler] specific batch item for time: ${time}`);
 
+            // === JITTER MECHANISM ===
+            // Prevent API Quota Exceeded by spreading load over the hour
+            let [hours, minutes] = time.split(':').map(Number);
+            // Add random offset 0-55 minutes
+            const jitterMinutes = Math.floor(Math.random() * 55);
+            minutes += jitterMinutes;
+
+            // Handle hour rollover
+            if (minutes >= 60) {
+                hours = (hours + 1) % 24;
+                minutes -= 60;
+            }
+
+            const safeTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            console.log(`[AutoScheduler] Applied Jitter: ${time} -> ${safeTime}`);
+
             // Clone config and override start time
-            const itemConfig = { ...config, startTime: time };
+            const itemConfig = { ...config, startTime: safeTime };
 
             // Random Duration Logic
             if (config.batchMinDuration && config.batchMaxDuration) {
@@ -317,7 +333,7 @@ class AutoSchedulerService {
                 // Round to nearest 0.5 hours for cleaner schedules
                 randomDuration = Math.round(randomDuration * 2) / 2;
                 itemConfig.durationHours = randomDuration;
-                console.log(`[AutoScheduler] Randomized duration for ${time}: ${randomDuration}h`);
+                console.log(`[AutoScheduler] Randomized duration for ${safeTime}: ${randomDuration}h`);
             }
 
             // Generate single rotation
