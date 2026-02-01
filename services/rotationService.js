@@ -92,12 +92,23 @@ function init() {
   checkRotations();
 }
 
+let isProcessing = false;
+
 async function checkRotations() {
+  if (isProcessing) {
+    console.log('[RotationService] Loop skipped - previous check still running');
+    return;
+  }
+  isProcessing = true;
+
   try {
     const activeRotations = await Rotation.findActiveRotations();
     const now = new Date();
 
     for (const rotation of activeRotations) {
+      // PROCESSSING YIELD: Prevent keeping CPU busy for too long if many rotations exist
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       if (!rotation.start_time || !rotation.end_time) continue;
 
       const items = await Rotation.getItemsByRotationId(rotation.id);
@@ -235,6 +246,8 @@ async function checkRotations() {
     }
   } catch (error) {
     console.error('[RotationService] Error checking rotations:', error);
+  } finally {
+    isProcessing = false;
   }
 }
 
