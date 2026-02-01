@@ -5304,7 +5304,12 @@ app.get('/api/channels/:id/best-hours', isAuthenticated, async (req, res) => {
     }
 
     // Return fallback to prevent UI blocked ONLY for unknown errors, but warn user
-    res.json({ success: true, hours: ['08:00', '12:00', '18:00', '20:00', '22:00'].slice(0, 5), fallback: true, message: 'Fallback due to error' });
+    res.json({
+      success: true,
+      hours: ['08:00', '12:00', '18:00', '20:00', '22:00'].slice(0, 5),
+      fallback: true,
+      message: `Analytics Error: ${error.message}` // Expose real error
+    });
   }
 });
 

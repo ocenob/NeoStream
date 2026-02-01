@@ -940,7 +940,7 @@
 
                                 // Check for fallback warning
                                 if (data.fallback) {
-                                    showToast('info', 'Analytics API Error. Using Defaults.');
+                                    showToast('error', data.message || 'Analytics API Error');
                                 }
 
                                 // Update array
