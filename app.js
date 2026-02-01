@@ -5224,6 +5224,48 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
   }
 });
 
+// DELETE Channel Endpoint
+app.delete('/api/settings/youtube-channel/:id', isAuthenticated, async (req, res) => {
+  try {
+    const channelId = req.params.id;
+    const userId = req.session.userId;
+    const YoutubeChannel = require('./models/YoutubeChannel');
+
+    // 1. Verify ownership
+    const channel = await YoutubeChannel.findById(channelId);
+    if (!channel) {
+      return res.status(404).json({ success: false, error: 'Channel not found' });
+    }
+    if (channel.user_id !== userId) {
+      return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+
+    // 2. Unlink streams (prevent FK issues and logical errors)
+    await new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE streams SET youtube_channel_id = NULL, is_youtube_api = 0, platform = "Custom" WHERE youtube_channel_id = ? AND user_id = ?',
+        [channelId, userId],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
+
+    // 3. Delete channel
+    const result = await YoutubeChannel.delete(channelId, userId);
+
+    if (result.deleted) {
+      res.json({ success: true, message: 'Channel deleted successfully' });
+    } else {
+      res.status(500).json({ success: false, error: 'Failed to delete channel' });
+    }
+  } catch (error) {
+    console.error('Error deleting channel:', error);
+    res.status(500).json({ success: false, error: 'Internal server error during deletion' });
+  }
+});
+
 // GET /api/channels/:id/best-hours (New Endpoint for Analytics)
 app.get('/api/channels/:id/best-hours', isAuthenticated, async (req, res) => {
   try {
