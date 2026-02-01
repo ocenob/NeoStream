@@ -931,6 +931,18 @@
                             const data = await res.json();
 
                             if (data.success) {
+                                // Check for NO_DATA explicitly
+                                if (data.message === 'NO_DATA') {
+                                    showToast('error', 'No Viewer Data found in Analytics (Last 30 Days)');
+                                    document.getElementById('batchSlotsContainer').innerHTML = '<span class="text-amber-500 text-xs italic">No viewer data available. Try Manual Mode.</span>';
+                                    return;
+                                }
+
+                                // Check for fallback warning
+                                if (data.fallback) {
+                                    showToast('info', 'Analytics API Error. Using Defaults.');
+                                }
+
                                 // Update array
                                 const times = data.hours || [];
                                 document.getElementById('batchStartTimesJson').value = JSON.stringify(times);
@@ -945,14 +957,21 @@
                                         container.innerHTML += `<span class="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-1 rounded text-xs font-mono font-bold">${t}</span>`;
                                     });
                                 }
-                                showToast('success', `Found ${times.length} best times!`);
+
+                                if (!data.fallback) {
+                                    showToast('success', `Found ${times.length} best times from Analytics!`);
+                                }
                             } else {
-                                showToast('error', 'Failed to detect times');
+                                // Handle Specific Backend Errors
+                                if (data.error) {
+                                    showToast('error', data.error);
+                                } else {
+                                    showToast('error', 'Failed to detect times');
+                                }
                             }
                         } catch (e) {
                             console.error(e);
                             showToast('error', 'Network error');
-                            showToast('info', 'Using fallback times');
                         } finally {
                             btn.disabled = false;
                             btn.innerHTML = originalText;

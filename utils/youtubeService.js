@@ -175,8 +175,8 @@ class YoutubeService {
 
             if (!response.data.rows || response.data.rows.length === 0) {
                 console.log('[YouTube Analytics] No data found.');
-                // Fallback hours if no data
-                return ['19:00', '20:00', '21:00', '12:00', '08:00'].slice(0, limit);
+                // Return empty array to indicate "No Data" explicitly, enabling UI to handle it.
+                return [];
             }
 
             // data.rows is array of [hour, views]. Hour is "00".."23"
@@ -189,8 +189,16 @@ class YoutubeService {
 
         } catch (error) {
             console.error('[YouTube Analytics] Error fetching best hours:', error.message);
-            // Fallback hours if API fails (e.g. scope issue)
-            return ['19:00', '20:00', '21:00', '12:00', '08:00'].slice(0, limit);
+
+            // Re-throw specific errors for UI handling
+            if (error.code === 403 || (error.message && error.message.includes('Forbidden'))) {
+                throw new Error('YOUTUBE_ANALYTICS_API_NOT_ENABLED');
+            }
+            if (error.code === 401 || (error.message && error.message.includes('insufficient'))) {
+                throw new Error('YOUTUBE_ANALYTICS_SCOPE_MISSING');
+            }
+
+            throw error;
         }
     }
 }

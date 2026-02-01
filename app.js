@@ -5243,12 +5243,26 @@ app.get('/api/channels/:id/best-hours', isAuthenticated, async (req, res) => {
     await ytService.init();
 
     const bestHours = await ytService.getChannelBestHours(count);
+
+    if (bestHours.length === 0) {
+      // No Data Found
+      return res.json({ success: true, hours: [], message: 'NO_DATA' });
+    }
+
     res.json({ success: true, hours: bestHours });
 
   } catch (error) {
-    console.error('Error fetching best hours:', error);
-    // Return fallback to prevent UI blocked
-    res.json({ success: true, hours: ['08:00', '12:00', '18:00', '20:00', '22:00'].slice(0, 5), fallback: true });
+    console.error('Error fetching best hours:', error.message);
+
+    if (error.message === 'YOUTUBE_ANALYTICS_API_NOT_ENABLED') {
+      return res.json({ success: false, error: 'Youtube Analytics API is NOT Enabled in Google Cloud Console.' });
+    }
+    if (error.message === 'YOUTUBE_ANALYTICS_SCOPE_MISSING') {
+      return res.json({ success: false, error: 'Insufficient Permissions. Please Re-Login your YouTube account.' });
+    }
+
+    // Return fallback to prevent UI blocked ONLY for unknown errors, but warn user
+    res.json({ success: true, hours: ['08:00', '12:00', '18:00', '20:00', '22:00'].slice(0, 5), fallback: true, message: 'Fallback due to error' });
   }
 });
 
