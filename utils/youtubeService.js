@@ -169,23 +169,25 @@ class YoutubeService {
                 startDate: formatDate(startDate),
                 endDate: formatDate(endDate),
                 metrics: 'views',
-                dimensions: 'hour',
+                dimensions: 'day', // 'hour' is not supported for channel reports, utilizing 'day' to validate API access
                 sort: '-views'
             });
 
             if (!response.data.rows || response.data.rows.length === 0) {
                 console.log('[YouTube Analytics] No data found.');
-                // Return empty array to indicate "No Data" explicitly, enabling UI to handle it.
                 return [];
             }
 
-            // data.rows is array of [hour, views]. Hour is "00".."23"
-            const topHours = response.data.rows
-                .slice(0, limit)
-                .map(row => `${row[0]}:00`);
+            // US / Reggaeton Audience Strategy:
+            // - 14:00 (2 PM): Early afternoon
+            // - 17:00 (5 PM): Commute / After work peak
+            // - 19:00 (7 PM): Prime Time
+            // - 21:00 (9 PM): Late Prime Time
+            // - 23:00 (11 PM): Late Night / Party vibes
+            const bestPracticeHours = ['14:00', '17:00', '19:00', '21:00', '23:00'];
+            console.log('[YouTube Analytics] API Connected. Using US/Reggaeton Best Practice Hours:', bestPracticeHours);
 
-            console.log('[YouTube Analytics] Top Hours:', topHours);
-            return topHours;
+            return bestPracticeHours.slice(0, limit);
 
         } catch (error) {
             console.error('[YouTube Analytics] Error fetching best hours:', error.message);
