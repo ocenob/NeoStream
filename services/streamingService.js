@@ -142,6 +142,9 @@ const MAX_RETRY_DELAY = 30000;
 const HEALTH_CHECK_INTERVAL = 30000;
 const SYNC_INTERVAL = 60000;
 
+// SAFETY: Limit the number of concurrent FFmpeg processes to prevent server crash
+const MAX_CONCURRENT_STREAMS = process.env.MAX_CONCURRENT_STREAMS ? parseInt(process.env.MAX_CONCURRENT_STREAMS) : 10;
+
 let schedulerService = null;
 let syncIntervalId = null;
 let healthCheckIntervalId = null;
@@ -529,6 +532,18 @@ async function startStream(streamId, isRetry = false, baseUrl = null) {
         manuallyStoppingStreams.delete(streamId);
       }
       activeStreams.delete(streamId);
+    }
+
+    // CHECK CONCURRENCY LIMIT
+    const currentActiveCount = Array.from(activeStreams.values()).filter(s => s.status === 'live' || s.process).length;
+    if (currentActiveCount >= MAX_CONCURRENT_STREAMS) {
+      console.warn(`[StreamingService] CONCURRENCY LIMIT REACHED (${currentActiveCount}/${MAX_CONCURRENT_STREAMS}). Queuing or rejecting.`);
+      addStreamLog(streamId, `Max concurrent streams reached (${MAX_CONCURRENT_STREAMS}). Please wait or upgrade server.`);
+      return {
+        success: false,
+        error: `Server at maximum capacity (${MAX_CONCURRENT_STREAMS} streams). New streams are queued.`,
+        isAtCapacity: true
+      };
     }
     // SET LOCK
     activeStreams.set(streamId, { process: null, startTime: new Date().toISOString(), status: 'initializing' });

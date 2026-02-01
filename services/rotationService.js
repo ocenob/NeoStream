@@ -232,11 +232,20 @@ async function checkRotations() {
               itemId: currentItem.id,
               streamId: result.streamId
             });
+          } else if (result.isAtCapacity) {
+            // Server at limit, don't clear startingStreams just yet to avoid rapid retries
+            // Log once per loop
+            if (!loggedAlreadyRunning.has(`capacity_${rotation.id}`)) {
+              console.warn(`[RotationService] Server at capacity. Rotation ${rotation.name} is waiting for a slot.`);
+              loggedAlreadyRunning.add(`capacity_${rotation.id}`);
+            }
+            return; // Skip this rotation for this loop iteration
           }
         } finally {
           startingStreams.delete(streamKey);
         }
         loggedAlreadyRunning.delete(streamKey);
+        loggedAlreadyRunning.delete(`capacity_${rotation.id}`);
       } else {
         if (!loggedAlreadyRunning.has(streamKey)) {
           console.log(`[RotationService] Rotation item ${currentIndex + 1}/${items.length} already running: ${currentItem.title}`);
@@ -451,7 +460,11 @@ async function startRotationStream(rotation, item) {
     console.log('[RotationService] Stream created:', stream.id);
 
     console.log('[RotationService] Starting FFmpeg stream...');
-    await streamingService.startStream(stream.id);
+    const startResult = await streamingService.startStream(stream.id);
+    if (!startResult.success) {
+      console.error(`[RotationService] FFmpeg start failed: ${startResult.error}`);
+      return { success: false, error: startResult.error, isAtCapacity: startResult.isAtCapacity };
+    }
     console.log('[RotationService] FFmpeg stream started successfully');
 
     return { success: true, streamId: stream.id, broadcastId: broadcast.id };

@@ -338,6 +338,9 @@ class AutoSchedulerService {
 
             // Generate single rotation
             // We await sequentially to be safe with DB transactions
+            // YIELD: Avoid blocking the event loop for a long time during large batches
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             const result = await this.generateRotations(channelId, userId, itemConfig);
             results.push(result);
         }
