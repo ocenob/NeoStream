@@ -5284,7 +5284,8 @@ app.get('/api/channels/:id/best-hours', isAuthenticated, async (req, res) => {
     // Init service (authenticates with Google)
     await ytService.init();
 
-    const bestHours = await ytService.getChannelBestHours(count);
+    const region = req.query.region || 'GLOBAL';
+    const bestHours = await ytService.getChannelBestHours(count, region);
 
     if (bestHours.length === 0) {
       // No Data Found

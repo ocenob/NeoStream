@@ -150,7 +150,7 @@ class YoutubeService {
      * Get Best Hours for Channel based on Views from Analytics (Last 30 Days)
      * @returns {Promise<string[]>} Array of hours e.g. ["08:00", "13:00", "19:00"]
      */
-    async getChannelBestHours(limit = 5) {
+    async getChannelBestHours(limit = 5, region = 'GLOBAL') {
         if (!this.oauth2Client) throw new Error('Service not initialized');
 
         // Initialize Analytics Client
@@ -178,14 +178,32 @@ class YoutubeService {
                 return [];
             }
 
-            // US / Reggaeton Audience Strategy:
-            // - 14:00 (2 PM): Early afternoon
-            // - 17:00 (5 PM): Commute / After work peak
-            // - 19:00 (7 PM): Prime Time
-            // - 21:00 (9 PM): Late Prime Time
-            // - 23:00 (11 PM): Late Night / Party vibes
-            const bestPracticeHours = ['14:00', '17:00', '19:00', '21:00', '23:00'];
-            console.log('[YouTube Analytics] API Connected. Using US/Reggaeton Best Practice Hours:', bestPracticeHours);
+            // Region-Based Optimization Logic
+            let bestPracticeHours = [];
+
+            switch (region) {
+                case 'US': // Americas (US/Latin/Brazil) - Reggaeton Focus
+                    // 2PM, 5PM, 7PM, 9PM, 11PM (Local User Time / Server Time assumption usually aligns or is relative)
+                    bestPracticeHours = ['14:00', '17:00', '19:00', '21:00', '23:00'];
+                    break;
+
+                case 'ASIA': // Indonesia/India
+                    // 6PM, 7PM, 8PM, 9PM, 10PM (Prime Time Evening)
+                    bestPracticeHours = ['18:00', '19:00', '20:00', '21:00', '22:00'];
+                    break;
+
+                case 'EUROPE': // UK/Europe
+                    // 4PM, 6PM, 8PM, 10PM, 12AM (Afternoon tea to late night)
+                    bestPracticeHours = ['16:00', '18:00', '20:00', '22:00', '00:00'];
+                    break;
+
+                default: // GLOBAL / Balanced
+                    // Spread throughout the day: Morning, Lunch, Afternoon, Prime, Late
+                    bestPracticeHours = ['08:00', '12:00', '16:00', '20:00', '22:00'];
+                    break;
+            }
+
+            console.log(`[YouTube Analytics] API Connected. Region: ${region}. Using Hours:`, bestPracticeHours);
 
             return bestPracticeHours.slice(0, limit);
 
