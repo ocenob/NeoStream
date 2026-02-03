@@ -28,45 +28,41 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY);
 const now = new Date();
 console.log(`🕒 Server Time: ${now.toLocaleString()}`);
 
-db.all("SELECT * FROM streams WHERE status = 'scheduled' ORDER BY schedule_time ASC", (err, streams) => {
+// Check Future ROTATIONS (Recurring Schedule)
+db.all("SELECT * FROM stream_rotations WHERE status = 'active' ORDER BY start_time ASC", (err, rotations) => {
     if (err) {
         console.error('❌ Query Error:', err.message);
         return;
     }
 
-    // Filter for truly future streams (in case server time drift affects query)
-    const futureStreams = streams.filter(s => {
-        const schedTime = new Date(s.schedule_time);
-        return schedTime > now;
+    const upcoming = rotations.filter(r => {
+        // Show all active rotations
+        return true;
     });
 
-    console.log(`\nFound ${futureStreams.length} upcoming streams.`);
+    console.log(`\nFound ${upcoming.length} active rotations.`);
 
-    if (futureStreams.length === 0) {
-        console.log('⚠️ No future streams found. Check if rotations are active.');
+    if (upcoming.length === 0) {
+        console.log('⚠️ No active rotations found.');
     } else {
-        console.log('\n--- UPCOMING SCHEDULE & OPTIMIZATION STATUS ---');
-        console.log('---------------------------------------------------------------------------------');
-        console.log('| Time (Local)        | Optimization (Copy) | Title');
-        console.log('---------------------------------------------------------------------------------');
+        console.log('\n--- ACTIVE ROTATION SCHEDULE (VPS) ---');
+        console.log('---------------------------------------------------------------------------------------------------------');
+        console.log('| Start Time (Local)      | End Time (Local)        | Repeat  | Name');
+        console.log('---------------------------------------------------------------------------------------------------------');
 
-        futureStreams.forEach(s => {
-            const schedTime = new Date(s.schedule_time);
-            const timeStr = schedTime.toLocaleString();
+        upcoming.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
-            // CHECK LOGIC: 
-            // If use_advanced_settings is 0 (false), our Code Fix (Opsi A) will use "-c copy".
-            // If use_advanced_settings is 1 (true), it might re-encode (High CPU).
-            const isOptimized = !s.use_advanced_settings;
-            const optStatus = isOptimized ? '✅ YES (Low CPU)' : '❌ NO (Re-encode)';
+        upcoming.forEach(r => {
+            const start = new Date(r.start_time).toLocaleString();
+            const end = new Date(r.end_time).toLocaleString();
 
-            // Truncate title for display
-            let title = s.title || 'No Title';
-            if (title.length > 40) title = title.substring(0, 37) + '...';
+            let name = r.name || 'No Name';
+            if (name.length > 30) name = name.substring(0, 27) + '...';
 
-            console.log(`| ${timeStr.padEnd(19)} | ${optStatus.padEnd(19)} | ${title}`);
+            console.log(`| ${start.padEnd(23)} | ${end.padEnd(23)} | ${r.repeat_mode.padEnd(7)} | ${name}`);
         });
-        console.log('---------------------------------------------------------------------------------');
+        console.log('---------------------------------------------------------------------------------------------------------');
+        console.log('ℹ️ NOTE: Based on codebase, ALL Rotations are hardcoded to use "Low CPU" (Copy Mode).');
     }
 
     db.close();
