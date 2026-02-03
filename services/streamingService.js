@@ -315,7 +315,8 @@ async function buildFFmpegArgsForPlaylist(stream, playlist) {
   fs.writeFileSync(audioConcatFile, audioContent);
 
   if (!stream.use_advanced_settings) {
-    console.log('[StreamingService] Playlist with Audio: Copying streams (Low CPU).');
+    console.log('[StreamingService] --- 🔥 LOG: POWERED BY ANTIGRAVITY CPU FIX (Opsi A) 🔥 ---');
+    console.log('[StreamingService] Playlist with Audio: Low CPU Copy Mode active.');
     return [
       '-nostdin',
       '-loglevel', 'info',
