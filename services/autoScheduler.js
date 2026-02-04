@@ -445,9 +445,12 @@ class AutoSchedulerService {
         const itemsToAdd = [];
 
         // RANDOM OFFSETS: Ensure different rotations start from different points in the pool
-        // SEQUENTIAL PAIRING: Removed Random Offsets to ensure Line 1 maps to Thumbnail 1
-        const thumbOffset = 0;
-        const globalTitleOffset = 0;
+        // SEQUENTIAL PAIRING WITH SYNCED RANDOM START: 
+        // Use a single random offset for BOTH titles and thumbnails 
+        // to ensure they start at the same random point but stay paired (1-1, 2-2, etc.)
+        const syncRandomOffset = Math.floor(Math.random() * 100);
+        const thumbOffset = syncRandomOffset;
+        const globalTitleOffset = syncRandomOffset;
 
         // Determine Loop Condition
         const useItemCountMode = (targetItemCount && parseInt(targetItemCount) > 0);
