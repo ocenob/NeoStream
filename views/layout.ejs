@@ -1008,6 +1008,7 @@
 
       requestAnimationFrame(() => {
         modal.classList.add('opacity-100');
+        modal.classList.remove('opacity-0');
         content.classList.add('scale-100', 'opacity-100');
         content.classList.remove('scale-95', 'opacity-0');
       });
