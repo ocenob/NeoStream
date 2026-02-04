@@ -1247,13 +1247,13 @@ app.delete('/api/thumbnails/:id', isAuthenticated, async (req, res) => {
     const thumb = await Thumbnail.findById(req.params.id);
     if (!thumb || thumb.user_id !== req.session.userId) return res.status(403).json({ success: false });
 
-    // Delete file
-    const p = path.join(__dirname, 'public', thumb.filepath);
-    if (fs.existsSync(p)) fs.unlinkSync(p);
-
+    // logic penghapusan file dan record sekarang ditangani di model Thumbnail.delete
     await Thumbnail.delete(req.params.id);
     res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ success: false }); }
+  } catch (e) {
+    console.error('Error deleting thumbnail:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
 });
 
 app.get('/gallery', isAuthenticated, async (req, res) => {
