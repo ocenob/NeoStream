@@ -386,6 +386,16 @@ class AutoSchedulerService {
             index === self.findIndex((t2) => (t2.id === t.id))
         );
 
+        // SORT NUMERICALLY: Ensure Thumbnail "1" is at index 0, "2" is index 1, etc.
+        galleryThumbnails.sort((a, b) => {
+            const getNum = (str) => {
+                if (!str) return 0;
+                const match = str.match(/\d+/);
+                return match ? parseInt(match[0]) : 0;
+            };
+            return getNum(a.title) - getNum(b.title);
+        });
+
         // 3. Setup Timing
         const now = new Date();
         const [hours, minutes] = startTime.split(':').map(Number);
@@ -435,8 +445,9 @@ class AutoSchedulerService {
         const itemsToAdd = [];
 
         // RANDOM OFFSETS: Ensure different rotations start from different points in the pool
-        const thumbOffset = galleryThumbnails.length > 0 ? Math.floor(Math.random() * galleryThumbnails.length) : 0;
-        const globalTitleOffset = customTitles.length > 0 ? Math.floor(Math.random() * customTitles.length) : 0;
+        // SEQUENTIAL PAIRING: Removed Random Offsets to ensure Line 1 maps to Thumbnail 1
+        const thumbOffset = 0;
+        const globalTitleOffset = 0;
 
         // Determine Loop Condition
         const useItemCountMode = (targetItemCount && parseInt(targetItemCount) > 0);
