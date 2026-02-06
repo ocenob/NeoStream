@@ -86,9 +86,50 @@ function getNextSchedule(rotation, baseDate = null) {
   return { start: nextStart, end: nextEnd };
 }
 
-function init() {
+async function init() {
   console.log('[RotationService] Initializing rotation service...');
-  checkIntervalId = setInterval(checkRotations, 10 * 1000);
+
+  // RECOVER STATE FROM DATABASE
+  try {
+    const activeStreams = await Stream.findAll(null, 'live');
+    const scheduledStreams = await Stream.findAll(null, 'scheduled');
+    const allRecent = [...activeStreams, ...scheduledStreams];
+
+    let recoveredCount = 0;
+    for (const s of allRecent) {
+      if (s.youtube_broadcast_id) {
+        // Try to find if this stream belongs to a rotation
+        // We look for streams that have rotation_id-like tags or we can check the title/video_id
+        // However, the best way is to have a rotation_id in the streams table (which we have in recent migrations)
+        // Let's check rotation items to match
+        const activeRotations = await Rotation.findActiveRotations();
+        for (const rotation of activeRotations) {
+          const items = await Rotation.getItemsByRotationId(rotation.id);
+          const currentItem = items[rotation.current_index || 0];
+
+          if (currentItem && (s.title === currentItem.title || s.youtube_broadcast_id)) {
+            const streamKey = `${rotation.id}_${currentItem.id}`;
+            if (!activeRotationStreams.has(streamKey)) {
+              activeRotationStreams.set(streamKey, {
+                rotationId: rotation.id,
+                itemId: currentItem.id,
+                streamId: s.id,
+                recovered: true
+              });
+              recoveredCount++;
+            }
+          }
+        }
+      }
+    }
+    if (recoveredCount > 0) {
+      console.log(`[RotationService] Successfully recovered ${recoveredCount} active/scheduled rotation streams from database`);
+    }
+  } catch (err) {
+    console.error('[RotationService] Failed to recover state:', err.message);
+  }
+
+  checkIntervalId = setInterval(checkRotations, 15 * 1000); // Increased check interval slightly
   checkRotations();
 }
 
@@ -225,6 +266,28 @@ async function checkRotations() {
         startingStreams.add(streamKey);
 
         try {
+          // FINAL DOUBLE CHECK IN DATABASE BEFORE INSERTING NEW BROADCAST
+          const existingStreams = await Stream.findAll(rotation.user_id, null, rotation.youtube_channel_id);
+          const duplicate = existingStreams.find(s =>
+            (s.status === 'live' || s.status === 'scheduled') &&
+            s.title === currentItem.title
+          );
+
+          if (duplicate) {
+            console.log(`[RotationService] Found existing stream in DB for ${currentItem.title}. Recovering mapping.`);
+            activeRotationStreams.set(streamKey, {
+              rotationId: rotation.id,
+              itemId: currentItem.id,
+              streamId: duplicate.id
+            });
+            continue;
+          }
+
+          // RATE LIMIT PROTECTION: Small delay between consecutive starts in same loop
+          if (startingStreams.size > 0) {
+            await new Promise(r => setTimeout(r, 3000));
+          }
+
           const result = await startRotationStream(rotation, currentItem);
           if (result.success) {
             activeRotationStreams.set(streamKey, {
@@ -474,7 +537,18 @@ async function startRotationStream(rotation, item) {
     return { success: true, streamId: stream.id, broadcastId: broadcast.id };
   } catch (error) {
     console.error('[RotationService] Error starting rotation stream:', error);
-    return { success: false, error: error.message };
+
+    // Check for YouTube Quota/Rate Limit Errors
+    const errorMessage = error.message || '';
+    const isRateLimit = errorMessage.includes('rate limit') || (error.code === 403 && errorMessage.includes('exceed'));
+
+    if (isRateLimit) {
+      console.error('[RotationService] CRITICAL: YouTube Rate Limit Reached. Backing off...');
+      // We could potentially pause the rotation here, but for now just propagating the error is enough 
+      // as the guard in checkRotations will handle the retry interval.
+    }
+
+    return { success: false, error: errorMessage, isRateLimit };
   }
 }
 
