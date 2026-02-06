@@ -61,47 +61,31 @@ async function cleanupDuplicates() {
 
             console.log(`[Cleanup] Found total ${allBroadcasts.length} upcoming broadcasts`);
 
-            // Group by title to identify duplicates
-            const seenTitles = new Map();
+            // Grouping logic removed, we delete everything that is 'upcoming'
             let deletedCount = 0;
+            console.log(`[Cleanup] Preparing to delete ${allBroadcasts.length} upcoming broadcasts...`);
 
             for (const broadcast of allBroadcasts) {
                 const title = broadcast.snippet.title;
                 const id = broadcast.id;
                 const scheduledTime = broadcast.snippet.scheduledStartTime;
 
-                if (!seenTitles.has(title)) {
-                    seenTitles.set(title, []);
-                }
-                seenTitles.get(title).push({ id, scheduledTime });
-            }
+                try {
+                    console.log(`[Cleanup] Deleting broadcast: "${title}" (${id}) scheduled for ${scheduledTime}`);
+                    await youtube.liveBroadcasts.delete({ id: id });
+                    deletedCount++;
 
-            for (const [title, matches] of seenTitles.entries()) {
-                if (matches.length > 1) {
-                    console.log(`[Cleanup] Found ${matches.length} matches for title: "${title}"`);
-                    // Sort by scheduled time, keep the first one
-                    matches.sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
-
-                    // Keep the first one (earliest), delete the rest
-                    const toDelete = matches.slice(1);
-                    for (const item of toDelete) {
-                        try {
-                            await youtube.liveBroadcasts.delete({ id: item.id });
-                            deletedCount++;
-                            console.log(`[Cleanup] Deleted duplicate: ${item.id} (${item.scheduledTime})`);
-                            // Wait to avoid hitting rate limit
-                            await new Promise(r => setTimeout(r, 800));
-                        } catch (err) {
-                            console.error(`[Cleanup] Failed to delete ${item.id}:`, err.message);
-                            if (err.message.includes('quota') || err.code === 403) {
-                                console.log('[Cleanup] Hit API limit. Skipping further deletions for this channel.');
-                                break;
-                            }
-                        }
+                    // Safer delay for bulk deletion
+                    await new Promise(r => setTimeout(r, 600));
+                } catch (err) {
+                    console.error(`[Cleanup] Failed to delete ${id}:`, err.message);
+                    if (err.message.includes('quota') || err.code === 403) {
+                        console.log('[Cleanup] Hit API limit or quota. Stopping for this channel.');
+                        break;
                     }
                 }
             }
-            console.log(`[Cleanup] Finished channel ${channel.channel_name}. Deleted ${deletedCount} duplicates.`);
+            console.log(`[Cleanup] Finished channel ${channel.channel_name}. Total deleted: ${deletedCount}`);
         }
 
     } catch (err) {
