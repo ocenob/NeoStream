@@ -1128,13 +1128,36 @@
           <!-- Title & Description Row -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                 <label class="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Display Title</label>
-                 <input type="text" name="items[${idx}][title]" class="w-full bg-dark-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white title-input focus:border-primary focus:ring-1 focus:ring-primary outline-none" required placeholder="Title override">
+                 <label class="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Display Title (Live)</label>
+                 <input type="text" name="items[${idx}][title]" class="w-full bg-dark-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white title-input focus:border-primary focus:ring-1 focus:ring-primary outline-none" required placeholder="Title for live stream">
               </div>
               <div>
-                 <label class="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Description (Optional)</label>
-                 <textarea name="items[${idx}][description]" rows="1" class="w-full bg-dark-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none" placeholder="Optional override"></textarea>
+                 <label class="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Description (Live - Optional)</label>
+                 <textarea name="items[${idx}][description]" rows="1" class="w-full bg-dark-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none" placeholder="Optional live description"></textarea>
               </div>
+          </div>
+
+          <!-- Post-Live Metadata Row (NEW) -->
+          <div class="bg-blue-500/5 p-4 rounded-xl border border-blue-500/20 space-y-4">
+              <label class="block text-[10px] font-bold text-blue-400 mb-2.5 uppercase">
+                <i class="ti ti-history mr-1"></i> Post-Live Automation (After Stream Ends)
+              </label>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Post-Live Title (SEO)</label>
+                    <input type="text" name="items[${idx}][post_live_title]" class="w-full bg-dark-800 border border-blue-500/30 rounded-lg px-3 py-2 text-sm text-white post-live-title-input focus:border-blue-500 outline-none" placeholder="Optimized title for archive">
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Post-Live Thumbnail (Optional)</label>
+                    <input type="hidden" name="items[${idx}][post_live_thumbnail_path]" class="post-live-thumbnail-path-input">
+                    <div id="post-live-thumbnail-grid-${idx}" class="grid grid-cols-4 gap-2.5 p-1 max-h-[120px] overflow-y-auto custom-scrollbar bg-dark-900/50 rounded-lg border border-gray-700/50">
+                        <!-- JS Populated -->
+                    </div>
+                  </div>
+              </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
               <div class="md:col-span-2">
                  <label class="block text-[10px] font-bold text-gray-500 mb-1.5 uppercase">Tags (Optional)</label>
                  <input type="text" name="items[${idx}][tags]" class="w-full bg-dark-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white tags-input focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="e.g. music, jazz, chill">
@@ -1199,10 +1222,51 @@
                         populateItemGridsV3(idx);
                     }
 
+                    function populatePostLiveThumbnailGrid(idx) {
+                        const container = document.getElementById(`post-live-thumbnail-grid-${idx}`);
+                        if (!container) return;
+
+                        if (thumbnails.length === 0) {
+                            container.innerHTML = `<div class="col-span-4 text-center py-2 text-gray-600 italic text-[9px]">No thumbnails</div>`;
+                            return;
+                        }
+
+                        let html = '';
+                        thumbnails.forEach(t => {
+                            const displayUrl = t.filepath.startsWith('/') ? t.filepath : `/uploads/thumbnails/${t.filepath.split('/').pop()}`;
+                            html += `
+                                <div class="relative aspect-video rounded-md overflow-hidden border border-transparent hover:border-blue-500 cursor-pointer group post-live-thumb-card-${idx}" 
+                                     data-path="${t.filepath}"
+                                     onclick="selectPostLiveThumbnailForItem(${idx}, '${t.filepath.replace(/'/g, "\\'")}', this)">
+                                    <img src="${displayUrl}" class="w-full h-full object-cover">
+                                    <div class="absolute inset-x-0 bottom-0 top-0 bg-blue-500/0 group-hover:bg-blue-500/10 transition-colors"></div>
+                                    <div class="absolute top-1 right-1 opacity-0 group-[.item-selected]:opacity-100 transition-opacity">
+                                        <div class="bg-blue-500 text-white rounded-full p-0.5 shadow-lg">
+                                            <i class="ti ti-check text-[8px] font-bold"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        container.innerHTML = html;
+                    }
+
+                    window.selectPostLiveThumbnailForItem = function (idx, path, element) {
+                        const wrapper = document.querySelector(`.rotation-item[data-index="${idx}"]`);
+                        wrapper.querySelector('.post-live-thumbnail-path-input').value = path;
+
+                        // UI Feedback
+                        wrapper.querySelectorAll(`.post-live-thumb-card-${idx}`).forEach(card => {
+                            card.classList.remove('item-selected');
+                        });
+                        element.classList.add('item-selected');
+                    }
+
                     // -- V3 Grid Logic (Inline Selectors) --
                     function populateItemGridsV3(idx) {
                         populateVideoGridV3(idx);
                         populateThumbnailGridV3(idx);
+                        populatePostLiveThumbnailGrid(idx);
                     }
 
                     window.switchItemModeV3 = function (idx, mode) {
@@ -1401,7 +1465,9 @@
                                 privacy: document.getElementById('globalPrivacy').value,
                                 category: document.getElementById('globalCategory').value,
                                 thumbnail_path: el.querySelector('.thumbnail-path-input').value || null,
-                                original_thumbnail_path: el.dataset.originalThumbnail || null
+                                original_thumbnail_path: el.dataset.originalThumbnail || null,
+                                post_live_title: el.querySelector('.post-live-title-input').value || null,
+                                post_live_thumbnail_path: el.querySelector('.post-live-thumbnail-path-input').value || null
                             });
 
                             // Always append something to thumbnails array to keep index sync
@@ -1515,6 +1581,18 @@
                                                         previewWrap.classList.remove('hidden');
                                                         label.textContent = "Saved";
                                                     }
+                                                }
+                                            }
+
+                                            // Post-Live Metadata
+                                            if (item.post_live_title) el.querySelector('.post-live-title-input').value = item.post_live_title;
+                                            if (item.post_live_thumbnail_path) {
+                                                const plTPath = item.post_live_thumbnail_path;
+                                                const plTCard = el.querySelector(`.post-live-thumb-card-${idx}[data-path="${plTPath}"]`);
+                                                if (plTCard) {
+                                                    selectPostLiveThumbnailForItem(idx, plTPath, plTCard);
+                                                } else {
+                                                    el.querySelector('.post-live-thumbnail-path-input').value = plTPath;
                                                 }
                                             }
                                         } catch (err) {

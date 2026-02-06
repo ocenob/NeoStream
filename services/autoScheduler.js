@@ -573,7 +573,9 @@ class AutoSchedulerService {
                 privacy: privacy,
                 category: '10',
                 thumbnail_path: item.thumbnail_path,
-                original_thumbnail_path: item.thumbnail_path
+                original_thumbnail_path: item.thumbnail_path,
+                post_live_title: item.post_live_title || null,
+                post_live_thumbnail_path: item.post_live_thumbnail_path || null
             });
         }
 

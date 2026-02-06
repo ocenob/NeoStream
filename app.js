@@ -5466,7 +5466,9 @@ app.post('/api/rotations', isAuthenticated, uploadThumbnail.array('thumbnails'),
         thumbnail_path: thumbnailPath,
         original_thumbnail_path: originalThumbnailPath,
         privacy: item.privacy || 'unlisted',
-        category: item.category || '22'
+        category: item.category || '22',
+        post_live_title: item.post_live_title || null,
+        post_live_thumbnail_path: item.post_live_thumbnail_path || null
       });
     }
 
@@ -5538,7 +5540,9 @@ app.put('/api/rotations/:id', isAuthenticated, uploadThumbnail.array('thumbnails
         thumbnail_path: thumbnailPath,
         original_thumbnail_path: originalThumbnailPath,
         privacy: item.privacy || 'unlisted',
-        category: item.category || '22'
+        category: item.category || '22',
+        post_live_title: item.post_live_title || null,
+        post_live_thumbnail_path: item.post_live_thumbnail_path || null
       });
     }
 

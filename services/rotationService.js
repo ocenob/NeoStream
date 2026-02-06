@@ -455,7 +455,9 @@ async function startRotationStream(rotation, item) {
       youtube_channel_id: selectedChannel.id,
       schedule_time: rotation.start_time,
       end_time: rotation.end_time,
-      duration: streamDuration // Pass calculated duration
+      duration: streamDuration, // Pass calculated duration
+      post_live_title: item.post_live_title || null,
+      post_live_thumbnail_path: item.post_live_thumbnail_path || null
     });
     console.log('[RotationService] Stream created:', stream.id);
 
@@ -531,6 +533,17 @@ async function stopRotationStream(rotation, item) {
               id: rotationStream.youtube_broadcast_id,
               broadcastStatus: 'complete'
             });
+
+            // --- TRIGGER POST-LIVE METADATA SYNC ---
+            if (rotationStream.post_live_title) {
+              const youtubeService = require('./youtubeService');
+              const baseUrl = process.env.BASE_URL || 'http://localhost:7575';
+              console.log(`[RotationService] Triggering post-live metadata sync for ${rotationStream.id}`);
+              // Small delay to allow YouTube to process the "complete" transition
+              setTimeout(async () => {
+                await youtubeService.updatePostLiveMetadata(rotationStream.id, baseUrl);
+              }, 15000);
+            }
           }
         } catch (ytError) {
           console.error('[RotationService] Error completing YouTube broadcast:', ytError.message);

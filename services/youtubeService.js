@@ -366,9 +366,98 @@ async function transitionBroadcastToLive(streamId, baseUrl) {
   }
 }
 
+async function updatePostLiveMetadata(streamId, baseUrl) {
+  try {
+    const stream = await Stream.findById(streamId);
+    if (!stream || !stream.youtube_broadcast_id || !stream.post_live_title) {
+      console.log(`[YouTubeService] updatePostLiveMetadata: No update needed for stream ${streamId}`);
+      return { success: true };
+    }
+
+    console.log(`[YouTubeService] updatePostLiveMetadata: Starting for stream ${streamId} with title: ${stream.post_live_title}`);
+
+    const user = await User.findById(stream.user_id);
+    const selectedChannel = await YoutubeChannel.findById(stream.youtube_channel_id);
+
+    if (!user || !selectedChannel) {
+      console.error('[YouTubeService] User or Channel not found for post-live update');
+      return { success: false, error: 'User or Channel not found' };
+    }
+
+    const oauth2Client = getYouTubeOAuth2Client(
+      user.youtube_client_id,
+      decrypt(user.youtube_client_secret),
+      `${baseUrl}/auth/youtube/callback`
+    );
+
+    oauth2Client.setCredentials({
+      access_token: decrypt(selectedChannel.access_token),
+      refresh_token: decrypt(selectedChannel.refresh_token)
+    });
+
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+
+    // 1. Update Title & Description
+    const videoResponse = await youtube.videos.list({
+      part: 'snippet',
+      id: stream.youtube_broadcast_id
+    });
+
+    if (videoResponse.data.items && videoResponse.data.items.length > 0) {
+      const currentSnippet = videoResponse.data.items[0].snippet;
+      await youtube.videos.update({
+        part: 'snippet',
+        requestBody: {
+          id: stream.youtube_broadcast_id,
+          snippet: {
+            title: stream.post_live_title,
+            description: currentSnippet.description, // Keep original description or update if needed
+            categoryId: currentSnippet.categoryId,
+            tags: currentSnippet.tags,
+            defaultLanguage: currentSnippet.defaultLanguage,
+            defaultAudioLanguage: currentSnippet.defaultAudioLanguage
+          }
+        }
+      });
+      console.log(`[YouTubeService] Title updated to: ${stream.post_live_title}`);
+    }
+
+    // 2. Update Thumbnail if provided
+    if (stream.post_live_thumbnail_path) {
+      const projectRoot = path.resolve(__dirname, '..');
+      // Resolve path (check both relative to public and uploads)
+      let thumbnailPath = path.join(projectRoot, 'public', stream.post_live_thumbnail_path);
+
+      // Fallback to uploads/thumbnails if not absolute-like
+      if (!fs.existsSync(thumbnailPath)) {
+        thumbnailPath = path.join(projectRoot, 'public', 'uploads', 'thumbnails', stream.post_live_thumbnail_path);
+      }
+
+      if (fs.existsSync(thumbnailPath)) {
+        await youtube.thumbnails.set({
+          videoId: stream.youtube_broadcast_id,
+          media: {
+            mimeType: 'image/jpeg',
+            body: fs.createReadStream(thumbnailPath)
+          }
+        });
+        console.log(`[YouTubeService] Post-live thumbnail uploaded successfully`);
+      } else {
+        console.warn(`[YouTubeService] Post-live thumbnail file not found at: ${thumbnailPath}`);
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('[YouTubeService] Error in updatePostLiveMetadata:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   createYouTubeBroadcast,
   deleteYouTubeBroadcast,
   getYouTubeOAuth2Client,
-  transitionBroadcastToLive
+  transitionBroadcastToLive,
+  updatePostLiveMetadata
 };

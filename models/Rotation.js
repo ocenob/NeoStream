@@ -189,14 +189,16 @@ class Rotation {
       thumbnail_path = null,
       original_thumbnail_path = null,
       privacy = 'unlisted',
-      category = '10'
+      category = '10',
+      post_live_title = null,
+      post_live_thumbnail_path = null
     } = itemData;
 
     return new Promise((resolve, reject) => {
       db.run(
-        `INSERT INTO rotation_items (id, rotation_id, order_index, video_id, title, description, tags, thumbnail_path, original_thumbnail_path, privacy, category)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, rotation_id, order_index, video_id, title, description, tags, thumbnail_path, original_thumbnail_path, privacy, category],
+        `INSERT INTO rotation_items (id, rotation_id, order_index, video_id, title, description, tags, thumbnail_path, original_thumbnail_path, privacy, category, post_live_title, post_live_thumbnail_path)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, rotation_id, order_index, video_id, title, description, tags, thumbnail_path, original_thumbnail_path, privacy, category, post_live_title, post_live_thumbnail_path],
         function (err) {
           if (err) {
             console.error('Error adding rotation item:', err.message);
@@ -229,6 +231,22 @@ class Rotation {
         }
         resolve({ id: itemId, ...itemData });
       });
+    });
+  }
+
+  static async updateStreamPostLiveMetadata(streamId, data) {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `UPDATE streams SET post_live_title = ?, post_live_thumbnail_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [data.post_live_title, data.post_live_thumbnail_path, streamId],
+        function (err) {
+          if (err) {
+            console.error('Error updating stream post-live metadata:', err.message);
+            return reject(err);
+          }
+          resolve({ success: true });
+        }
+      );
     });
   }
 
