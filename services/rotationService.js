@@ -17,6 +17,7 @@ function getRedirectUri(user) {
 }
 
 let checkIntervalId = null;
+let globalPauseUntil = 0; // Timestamp to pause all YouTube API calls
 const activeRotationStreams = new Map();
 const loggedAlreadyRunning = new Set();
 const loggedScheduleInfo = new Set();
@@ -140,6 +141,12 @@ async function checkRotations() {
     console.log('[RotationService] Loop skipped - previous check still running');
     return;
   }
+
+  if (Date.now() < globalPauseUntil) {
+    console.log(`[RotationService] YouTube API Global Pause active for ${Math.ceil((globalPauseUntil - Date.now()) / 1000)}s due to Rate Limit`);
+    return;
+  }
+
   isProcessing = true;
 
   try {
@@ -270,7 +277,7 @@ async function checkRotations() {
           const existingStreams = await Stream.findAll(rotation.user_id, null, rotation.youtube_channel_id);
           const duplicate = existingStreams.find(s =>
             (s.status === 'live' || s.status === 'scheduled') &&
-            s.title === currentItem.title
+            (s.title === currentItem.title || (s.video_id === currentItem.video_id && s.youtube_broadcast_id))
           );
 
           if (duplicate) {
@@ -543,9 +550,8 @@ async function startRotationStream(rotation, item) {
     const isRateLimit = errorMessage.includes('rate limit') || (error.code === 403 && errorMessage.includes('exceed'));
 
     if (isRateLimit) {
-      console.error('[RotationService] CRITICAL: YouTube Rate Limit Reached. Backing off...');
-      // We could potentially pause the rotation here, but for now just propagating the error is enough 
-      // as the guard in checkRotations will handle the retry interval.
+      console.error('[RotationService] CRITICAL: YouTube Rate Limit Reached. Pausing ALL API calls for 5 minutes.');
+      globalPauseUntil = Date.now() + (5 * 60 * 1000); // 5 minute pause
     }
 
     return { success: false, error: errorMessage, isRateLimit };
