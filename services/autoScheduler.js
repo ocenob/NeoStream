@@ -366,6 +366,8 @@ class AutoSchedulerService {
             customTitles = [],
             customDescription = null,
             customTags = null,
+            postLiveTitles = [],
+            postLiveThumbnailMode = 'none',
             privacy = 'unlisted',
             repeatMode = 'daily'
         } = config;
@@ -532,12 +534,28 @@ class AutoSchedulerService {
                 thumbPath = thumb.filepath;
             }
 
+            // --- POST-LIVE METADATA LOGIC ---
+            let postLiveTitle = null;
+            if (postLiveTitles && postLiveTitles.length > 0) {
+                postLiveTitle = postLiveTitles[(itemIndex + globalTitleOffset) % postLiveTitles.length];
+            }
+
+            let postLiveThumbPath = null;
+            if (postLiveThumbnailMode === 'copy_live') {
+                postLiveThumbPath = thumbPath;
+            } else if (postLiveThumbnailMode === 'match_number' && galleryThumbnails.length > 0) {
+                // If match_number is selected, we assume it's the same numerical pairing as live
+                postLiveThumbPath = thumbPath;
+            }
+
             itemsToAdd.push({
                 video_id: `playlist:${randomPlaylistMeta.id}`,
                 title: title,
                 description: customDescription || (fullRandomPlaylist ? (fullRandomPlaylist.description || '') : ''),
                 tags: customTags || 'smart-rotation',
                 thumbnail_path: thumbPath,
+                post_live_title: postLiveTitle,
+                post_live_thumbnail_path: postLiveThumbPath,
                 duration: targetItemDuration // FORCED Random Duration
             });
 

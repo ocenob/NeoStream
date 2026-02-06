@@ -709,15 +709,41 @@
                                         </div>
 
                                         <div>
-                                            <label class="text-xs text-gray-400 block mb-1.5">Custom Titles (One per
-                                                line)</label>
+                                            <label class="text-xs text-gray-400 block mb-1.5">Custom Titles (Live - One
+                                                per line)</label>
                                             <textarea name="customTitles" rows="5"
                                                 placeholder="Title #1&#10;Title #2&#10;Title #3"
                                                 class="w-full px-3 py-2 bg-dark-900 border border-gray-600 rounded-lg text-xs text-white leading-relaxed resize-none"></textarea>
                                             <p class="text-[10px] text-gray-500 mt-1">Titles and gallery thumbnails will
-                                                be
-                                                assigned
-                                                sequentially to items.</p>
+                                                be assigned sequentially.</p>
+                                        </div>
+
+                                        <div class="bg-blue-500/5 p-4 rounded-xl border border-blue-500/20 space-y-4">
+                                            <label class="block text-[10px] font-bold text-blue-400 mb-0 uppercase">
+                                                <i class="ti ti-history mr-1"></i> Post-Live Automation (Bulk)
+                                            </label>
+                                            <div>
+                                                <label class="text-xs text-gray-400 block mb-1.5">Post-Live Titles (One
+                                                    per line)</label>
+                                                <textarea name="postLiveTitles" rows="3"
+                                                    placeholder="Post title #1&#10;Post title #2"
+                                                    class="w-full px-3 py-2 bg-dark-800 border border-blue-500/30 rounded-lg text-xs text-white leading-relaxed resize-none"></textarea>
+                                                <p class="text-[9px] text-gray-500 mt-1">If empty, automation will be
+                                                    disabled for these items.</p>
+                                            </div>
+                                            <div>
+                                                <label class="text-xs text-gray-400 block mb-1.5">Post-Live Thumbnail
+                                                    Mode</label>
+                                                <select name="postLiveThumbnailMode"
+                                                    class="w-full px-3 py-2 bg-dark-800 border border-blue-500/30 rounded-lg text-sm text-white">
+                                                    <option value="none" selected>None (No Update)</option>
+                                                    <option value="copy_live">Same as Live Thumbnail</option>
+                                                    <option value="match_number">Match Number from Gallery (e.g. 1.png)
+                                                    </option>
+                                                </select>
+                                                <p class="text-[9px] text-gray-500 mt-1">Controls how thumbnails are
+                                                    updated after stream ends.</p>
+                                            </div>
                                         </div>
 
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1017,6 +1043,8 @@
                             customTitles: formData.get('customTitles').split('\n').map(t => t.trim()).filter(t => t),
                             customDescription: formData.get('customDescription'),
                             customTags: formData.get('customTags'),
+                            postLiveTitles: formData.get('postLiveTitles') ? formData.get('postLiveTitles').split('\n').map(t => t.trim()).filter(t => t) : [],
+                            postLiveThumbnailMode: formData.get('postLiveThumbnailMode') || 'none',
                             privacy: formData.get('privacy'),
                             repeatMode: formData.get('repeatMode')
                         };

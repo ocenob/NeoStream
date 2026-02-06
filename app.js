@@ -1147,6 +1147,8 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
       customTitles,
       customDescription,
       customTags,
+      postLiveTitles,
+      postLiveThumbnailMode,
       privacy,
       repeatMode
     } = req.body;
@@ -1180,7 +1182,9 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
         // Weekly Pattern Params
         weeklyPattern: req.body.weeklyPattern === true || req.body.weeklyPattern === 'true',
         minDailyStreams: parseInt(req.body.minDailyStreams || 5),
-        maxDailyStreams: parseInt(req.body.maxDailyStreams || 10)
+        maxDailyStreams: parseInt(req.body.maxDailyStreams || 10),
+        postLiveTitles: postLiveTitles || [],
+        postLiveThumbnailMode: postLiveThumbnailMode || 'none'
       });
     } else {
       result = await AutoSchedulerService.generateRotations(channelId, userId, {
@@ -1194,7 +1198,9 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
         customDescription,
         customTags,
         privacy: privacy || 'unlisted',
-        repeatMode: repeatMode || 'daily'
+        repeatMode: repeatMode || 'daily',
+        postLiveTitles: postLiveTitles || [],
+        postLiveThumbnailMode: postLiveThumbnailMode || 'none'
       });
     }
 
