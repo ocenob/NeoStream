@@ -368,6 +368,8 @@ class AutoSchedulerService {
             customTags = null,
             postLiveTitles = [],
             postLiveThumbnailMode = 'none',
+            postLiveDelayDays = 0,
+            postLiveCtrThreshold = 0,
             privacy = 'unlisted',
             repeatMode = 'daily'
         } = config;
@@ -388,15 +390,23 @@ class AutoSchedulerService {
             index === self.findIndex((t2) => (t2.id === t.id))
         );
 
-        // SORT NUMERICALLY: Ensure Thumbnail "1" is at index 0, "2" is index 1, etc.
-        galleryThumbnails.sort((a, b) => {
-            const getNum = (str) => {
-                if (!str) return 0;
-                const match = str.match(/\d+/);
-                return match ? parseInt(match[0]) : 0;
-            };
-            return getNum(a.title) - getNum(b.title);
-        });
+        // Separate Live and Post-Live pools based on title/filename
+        const livePool = galleryThumbnails.filter(t => !t.title.toLowerCase().includes('post'));
+        const postPool = galleryThumbnails.filter(t => t.title.toLowerCase().includes('post'));
+
+        const sortNumeric = (list) => {
+            return list.sort((a, b) => {
+                const getNum = (str) => {
+                    if (!str) return 0;
+                    const match = str.match(/\d+/);
+                    return match ? parseInt(match[0]) : 0;
+                };
+                return getNum(a.title) - getNum(b.title);
+            });
+        };
+
+        sortNumeric(livePool);
+        sortNumeric(postPool);
 
         // 3. Setup Timing
         const now = new Date();
@@ -527,10 +537,9 @@ class AutoSchedulerService {
                 thumbPath = randomPlaylistMeta.thumbnails.split(',')[0];
             }
 
-            // Priority: Gallery Thumbnails (Strictly Channel Specific)
-            if (galleryThumbnails.length > 0) {
-                // ADDED OFFSET: Use thumbOffset to ensure different rotations start with different thumbnails
-                const thumb = galleryThumbnails[(itemIndex + thumbOffset) % galleryThumbnails.length];
+            // Priority: Live Pool
+            if (livePool.length > 0) {
+                const thumb = livePool[(itemIndex + thumbOffset) % livePool.length];
                 thumbPath = thumb.filepath;
             }
 
@@ -543,9 +552,15 @@ class AutoSchedulerService {
             let postLiveThumbPath = null;
             if (postLiveThumbnailMode === 'copy_live') {
                 postLiveThumbPath = thumbPath;
-            } else if (postLiveThumbnailMode === 'match_number' && galleryThumbnails.length > 0) {
-                // If match_number is selected, we assume it's the same numerical pairing as live
-                postLiveThumbPath = thumbPath;
+            } else if (postLiveThumbnailMode === 'match_number') {
+                if (postPool.length > 0) {
+                    // Match by number: Find post-thumb that corresponds to the same live-thumb index (or sync offset)
+                    const pThumb = postPool[(itemIndex + thumbOffset) % postPool.length];
+                    postLiveThumbPath = pThumb.filepath;
+                } else if (livePool.length > 0) {
+                    // Fallback to same as live if no post-pool found
+                    postLiveThumbPath = thumbPath;
+                }
             }
 
             itemsToAdd.push({
@@ -593,7 +608,9 @@ class AutoSchedulerService {
                 thumbnail_path: item.thumbnail_path,
                 original_thumbnail_path: item.thumbnail_path,
                 post_live_title: item.post_live_title || null,
-                post_live_thumbnail_path: item.post_live_thumbnail_path || null
+                post_live_thumbnail_path: item.post_live_thumbnail_path || null,
+                post_live_delay_days: postLiveDelayDays || 0,
+                post_live_ctr_threshold: postLiveCtrThreshold || 0
             });
         }
 

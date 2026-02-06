@@ -744,6 +744,25 @@
                                                 <p class="text-[9px] text-gray-500 mt-1">Controls how thumbnails are
                                                     updated after stream ends.</p>
                                             </div>
+                                            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-blue-500/10">
+                                                <div>
+                                                    <label class="text-xs text-gray-400 block mb-1.5"><i
+                                                            class="ti ti-clock mr-1"></i> Wait Days</label>
+                                                    <input type="number" name="postLiveDelayDays" value="0" min="0"
+                                                        class="w-full px-3 py-2 bg-dark-800 border border-blue-500/20 rounded-lg text-xs text-white">
+                                                    <p class="text-[8px] text-gray-500 mt-1">Wait X days before update.
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs text-gray-400 block mb-1.5"><i
+                                                            class="ti ti-chart-bar mr-1"></i> CTR Trigger</label>
+                                                    <input type="number" name="postLiveCtrThreshold" value="0" min="0"
+                                                        max="100" step="0.1"
+                                                        class="w-full px-3 py-2 bg-dark-800 border border-blue-500/20 rounded-lg text-xs text-white">
+                                                    <p class="text-[8px] text-gray-500 mt-1">Update ONLY if CTR <
+                                                            X%.</p>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1045,6 +1064,8 @@
                             customTags: formData.get('customTags'),
                             postLiveTitles: formData.get('postLiveTitles') ? formData.get('postLiveTitles').split('\n').map(t => t.trim()).filter(t => t) : [],
                             postLiveThumbnailMode: formData.get('postLiveThumbnailMode') || 'none',
+                            postLiveDelayDays: parseInt(formData.get('postLiveDelayDays') || 0),
+                            postLiveCtrThreshold: parseFloat(formData.get('postLiveCtrThreshold') || 0),
                             privacy: formData.get('privacy'),
                             repeatMode: formData.get('repeatMode')
                         };

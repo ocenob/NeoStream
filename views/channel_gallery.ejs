@@ -90,7 +90,13 @@
                                 class="w-full bg-dark-700 border border-gray-600 text-white pl-9 pr-4 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary">
                             <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-3">
+                            <label
+                                class="flex items-center gap-2 cursor-pointer bg-dark-700 px-3 py-1.5 rounded-lg border border-gray-600 hover:border-gray-500 transition-colors">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)"
+                                    class="w-4 h-4 rounded border-gray-600 text-primary focus:ring-primary bg-dark-800">
+                                <span class="text-xs text-gray-300 font-medium">Select All</span>
+                            </label>
                             <!-- Sort or View toggles could go here -->
                         </div>
                     </div>
@@ -101,9 +107,18 @@
                                 class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                                 <% files.forEach(function(file) { %>
                                     <div class="group bg-dark-700 rounded-lg overflow-hidden border border-transparent hover:border-gray-600 hover:bg-dark-600 transition-all cursor-pointer relative"
-                                        onclick="<%= mediaType === 'image' ? '' : `playMedia('${file.id}', '${file.title}', '${mediaType}')` %>">
-
+                                        data-id="<%= file.id %>" data-title="<%= file.title || file.filename %>"
+                                        onclick="<%= mediaType === 'image' ? '' : 'playMedia(this.dataset.id, this.dataset.title, mediaType)' %>">
                                         <div class="aspect-video relative overflow-hidden bg-dark-900">
+                                            <!-- Checkbox Overlay -->
+                                            <div
+                                                class="absolute top-2 left-2 z-10 file-checkbox-wrapper transition-opacity <%= mediaType === 'image' ? '' : 'opacity-0 group-hover:opacity-100' %>">
+                                                <input type="checkbox" name="selectedFiles" value="<%= file.id %>"
+                                                    data-title="<%= file.title || file.filename %>"
+                                                    onclick="event.stopPropagation(); updateSelectionCount()"
+                                                    class="w-4 h-4 rounded border-gray-600 text-primary focus:ring-primary bg-dark-800/80 backdrop-blur-sm shadow-lg file-checkbox cursor-pointer transition-all">
+                                            </div>
+
                                             <% if (mediaType==='audio' ) { %>
                                                 <div
                                                     class="w-full h-full flex items-center justify-center bg-[#181818]">
@@ -179,6 +194,34 @@
                                 </div>
                                 <% } %>
                     </div>
+                </div>
+
+                <!-- Floating Bulk Action Bar -->
+                <div id="bulkActionBar"
+                    class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-dark-800/90 backdrop-blur-md border border-blue-500/30 rounded-full px-6 py-3 shadow-2xl z-[100] transform translate-y-32 transition-all duration-300 flex items-center gap-6">
+                    <div class="flex items-center gap-3 pr-6 border-r border-gray-700">
+                        <div class="bg-primary/20 w-8 h-8 rounded-full flex items-center justify-center">
+                            <span id="selectedCountText" class="text-primary font-bold text-sm">0</span>
+                        </div>
+                        <span class="text-xs font-medium text-gray-300 whitespace-nowrap">items selected</span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="bulkDownload()"
+                            class="flex items-center gap-2 px-4 py-1.5 bg-dark-700 hover:bg-dark-600 text-white rounded-full text-xs transition-colors border border-gray-600">
+                            <i class="ti ti-download"></i>
+                            <span>Download</span>
+                        </button>
+                        <button onclick="bulkDelete()"
+                            class="flex items-center gap-2 px-4 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-full text-xs transition-colors border border-red-500/30">
+                            <i class="ti ti-trash"></i>
+                            <span>Delete</span>
+                        </button>
+                    </div>
+
+                    <button onclick="clearSelection()" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="ti ti-x text-lg"></i>
+                    </button>
                 </div>
 
                 <!-- Upload Modal -->
@@ -301,6 +344,18 @@
                         </div>
                     </div>
                 </div>
+
+                </div>
+
+                <style>
+                    .file-checkbox:checked {
+                        opacity: 1 !important;
+                    }
+
+                    .file-checkbox-wrapper.has-checked {
+                        opacity: 1 !important;
+                    }
+                </style>
 
                 <script>
                     const mediaType = '<%= mediaType %>';
@@ -950,4 +1005,122 @@
                             window.showToast('error', 'Failed to delete file');
                         }
                     }
+
+                    // --- Bulk Action Logic ---
+                    window.toggleSelectAll = function (checked) {
+                        const checkboxes = document.querySelectorAll('.file-checkbox');
+                        checkboxes.forEach(cb => cb.checked = checked);
+                        updateSelectionCount();
+                    };
+
+                    window.updateSelectionCount = function () {
+                        const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+                        const count = checkboxes.length;
+                        const bar = document.getElementById('bulkActionBar');
+                        const countText = document.getElementById('selectedCountText');
+
+                        if (countText) countText.textContent = count;
+
+                        if (count > 0) {
+                            bar.classList.remove('translate-y-32');
+                            bar.classList.add('translate-y-0');
+                        } else {
+                            bar.classList.add('translate-y-32');
+                            bar.classList.remove('translate-y-0');
+                            if (document.getElementById('selectAllCheckbox')) {
+                                document.getElementById('selectAllCheckbox').checked = false;
+                            }
+                        }
+
+                        // Update wrapper visibility
+                        document.querySelectorAll('.file-checkbox').forEach(cb => {
+                            const wrapper = cb.closest('.file-checkbox-wrapper');
+                            if (cb.checked) wrapper.classList.add('has-checked');
+                            else wrapper.classList.remove('has-checked');
+                        });
+                    };
+
+                    window.clearSelection = function () {
+                        const checkboxes = document.querySelectorAll('.file-checkbox');
+                        checkboxes.forEach(cb => cb.checked = false);
+                        if (document.getElementById('selectAllCheckbox')) {
+                            document.getElementById('selectAllCheckbox').checked = false;
+                        }
+                        updateSelectionCount();
+                    };
+
+                    window.bulkDelete = async function () {
+                        const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+                        const ids = Array.from(checkboxes).map(cb => cb.value);
+                        if (ids.length === 0) return;
+
+                        if (!(await window.showConfirm(`Delete ${ids.length} selected items? This action cannot be undone.`))) return;
+
+                        try {
+                            const btn = document.querySelector('#bulkActionBar button[onclick="bulkDelete()"]');
+                            const originalHTML = btn.innerHTML;
+                            btn.disabled = true;
+                            btn.innerHTML = '<i class="ti ti-loader animate-spin mr-2"></i>Deleting...';
+
+                            const res = await fetch('/api/gallery/bulk-delete', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-Token': csrfToken
+                                },
+                                body: JSON.stringify({ ids, type: mediaType })
+                            });
+
+                            const data = await res.json();
+                            if (data.success) {
+                                window.showToast('success', `Successfully deleted ${data.deleted} items`);
+                                location.reload();
+                            } else {
+                                window.showToast('error', data.error || 'Failed to delete items');
+                                btn.disabled = false;
+                                btn.innerHTML = originalHTML;
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            window.showToast('error', 'An error occurred during bulk delete');
+                            btn.disabled = false;
+                            btn.innerHTML = originalHTML;
+                        }
+                    };
+
+                    window.bulkDownload = async function () {
+                        const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+                        const ids = Array.from(checkboxes).map(cb => cb.value);
+                        if (ids.length === 0) return;
+
+                        if (ids.length === 1) {
+                            // Single download
+                            window.location.href = `/api/gallery/download/${mediaType}/${ids[0]}`;
+                            return;
+                        }
+
+                        // Bulk download - prepare as ZIP
+                        window.showToast('info', 'Preparing your download. This might take a moment...');
+
+                        try {
+                            const res = await fetch('/api/gallery/bulk-download', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-Token': csrfToken
+                                },
+                                body: JSON.stringify({ ids, type: mediaType })
+                            });
+
+                            const data = await res.json();
+                            if (data.success && data.downloadUrl) {
+                                window.location.href = data.downloadUrl;
+                            } else {
+                                window.showToast('error', data.error || 'Failed to prepare download');
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            window.showToast('error', 'Error preparing bulk download');
+                        }
+                    };
                 </script>

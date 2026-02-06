@@ -116,6 +116,12 @@ function initializeDatabase() {
             youtube_channel_id TEXT,
             is_youtube_api INTEGER DEFAULT 0,
             thumbnail_id TEXT,
+            post_live_title TEXT,
+            post_live_thumbnail_path TEXT,
+            post_live_delay_days INTEGER DEFAULT 0,
+            post_live_ctr_threshold FLOAT DEFAULT 0.0,
+            post_live_sync_status TEXT DEFAULT 'pending',
+            target_sync_date TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id),
@@ -214,6 +220,10 @@ function initializeDatabase() {
             original_thumbnail_path TEXT,
             privacy TEXT DEFAULT 'unlisted',
             category TEXT DEFAULT '10',
+            post_live_title TEXT,
+            post_live_thumbnail_path TEXT,
+            post_live_delay_days INTEGER DEFAULT 0,
+            post_live_ctr_threshold FLOAT DEFAULT 0.0,
             FOREIGN KEY (rotation_id) REFERENCES stream_rotations (id),
             FOREIGN KEY (video_id) REFERENCES videos (id)
         )`);

@@ -191,14 +191,16 @@ class Rotation {
       privacy = 'unlisted',
       category = '10',
       post_live_title = null,
-      post_live_thumbnail_path = null
+      post_live_thumbnail_path = null,
+      post_live_delay_days = null,
+      post_live_ctr_threshold = null
     } = itemData;
 
     return new Promise((resolve, reject) => {
       db.run(
-        `INSERT INTO rotation_items (id, rotation_id, order_index, video_id, title, description, tags, thumbnail_path, original_thumbnail_path, privacy, category, post_live_title, post_live_thumbnail_path)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, rotation_id, order_index, video_id, title, description, tags, thumbnail_path, original_thumbnail_path, privacy, category, post_live_title, post_live_thumbnail_path],
+        `INSERT INTO rotation_items (id, rotation_id, order_index, video_id, title, description, tags, thumbnail_path, original_thumbnail_path, privacy, category, post_live_title, post_live_thumbnail_path, post_live_delay_days, post_live_ctr_threshold)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, rotation_id, order_index, video_id, title, description, tags, thumbnail_path, original_thumbnail_path, privacy, category, post_live_title, post_live_thumbnail_path, post_live_delay_days, post_live_ctr_threshold],
         function (err) {
           if (err) {
             console.error('Error adding rotation item:', err.message);
@@ -236,17 +238,28 @@ class Rotation {
 
   static async updateStreamPostLiveMetadata(streamId, data) {
     return new Promise((resolve, reject) => {
-      db.run(
-        `UPDATE streams SET post_live_title = ?, post_live_thumbnail_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        [data.post_live_title, data.post_live_thumbnail_path, streamId],
-        function (err) {
-          if (err) {
-            console.error('Error updating stream post-live metadata:', err.message);
-            return reject(err);
-          }
-          resolve({ success: true });
+      const updates = [];
+      const values = [];
+
+      if (data.post_live_title !== undefined) { updates.push('post_live_title = ?'); values.push(data.post_live_title); }
+      if (data.post_live_thumbnail_path !== undefined) { updates.push('post_live_thumbnail_path = ?'); values.push(data.post_live_thumbnail_path); }
+      if (data.post_live_delay_days !== undefined) { updates.push('post_live_delay_days = ?'); values.push(data.post_live_delay_days); }
+      if (data.post_live_ctr_threshold !== undefined) { updates.push('post_live_ctr_threshold = ?'); values.push(data.post_live_ctr_threshold); }
+      if (data.post_live_sync_status !== undefined) { updates.push('post_live_sync_status = ?'); values.push(data.post_live_sync_status); }
+      if (data.target_sync_date !== undefined) { updates.push('target_sync_date = ?'); values.push(data.target_sync_date); }
+
+      if (updates.length === 0) return resolve({ success: true });
+
+      values.push(streamId);
+      const query = `UPDATE streams SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+
+      db.run(query, values, function (err) {
+        if (err) {
+          console.error('Error updating stream post-live metadata:', err.message);
+          return reject(err);
         }
-      );
+        resolve({ success: true });
+      });
     });
   }
 

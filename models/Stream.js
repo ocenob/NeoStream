@@ -46,14 +46,14 @@ class Stream {
           bitrate, resolution, fps, orientation, loop_video,
           schedule_time, end_time, duration, status, status_updated_at, use_advanced_settings, user_id,
           youtube_broadcast_id, youtube_stream_id, youtube_description, youtube_privacy, youtube_category, youtube_tags, youtube_thumbnail, youtube_channel_id, is_youtube_api, thumbnail_id,
-          post_live_title, post_live_thumbnail_path
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          post_live_title, post_live_thumbnail_path, post_live_delay_days, post_live_ctr_threshold, post_live_sync_status, target_sync_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id, title, video_id, rtmp_url, stream_key, platform, platform_icon,
           bitrate, resolution, fps, orientation, loop_video_int,
           schedule_time, end_time, duration, final_status, status_updated_at, use_advanced_settings_int, user_id,
           youtube_broadcast_id, youtube_stream_id, youtube_description, youtube_privacy, youtube_category, youtube_tags, youtube_thumbnail, youtube_channel_id, is_youtube_api_int, thumbnail_id,
-          post_live_title, post_live_thumbnail_path
+          post_live_title, post_live_thumbnail_path, post_live_delay_days, post_live_ctr_threshold, post_live_sync_status, target_sync_date
         ],
         function (err) {
           if (err) {
@@ -65,6 +65,22 @@ class Stream {
       );
     });
   }
+  static findAllPendingPostLive() {
+    return new Promise((resolve, reject) => {
+      db.all(
+        "SELECT * FROM streams WHERE post_live_sync_status = 'pending' AND post_live_title IS NOT NULL",
+        [],
+        (err, rows) => {
+          if (err) {
+            console.error('Error finding pending post-live streams:', err.message);
+            return reject(err);
+          }
+          resolve(rows || []);
+        }
+      );
+    });
+  }
+
   static findById(id) {
     return new Promise((resolve, reject) => {
       db.get('SELECT * FROM streams WHERE id = ?', [id], (err, row) => {

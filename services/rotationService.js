@@ -457,7 +457,9 @@ async function startRotationStream(rotation, item) {
       end_time: rotation.end_time,
       duration: streamDuration, // Pass calculated duration
       post_live_title: item.post_live_title || null,
-      post_live_thumbnail_path: item.post_live_thumbnail_path || null
+      post_live_thumbnail_path: item.post_live_thumbnail_path || null,
+      post_live_delay_days: item.post_live_delay_days || 0,
+      post_live_ctr_threshold: item.post_live_ctr_threshold || 0
     });
     console.log('[RotationService] Stream created:', stream.id);
 
@@ -538,11 +540,35 @@ async function stopRotationStream(rotation, item) {
             if (rotationStream.post_live_title) {
               const youtubeService = require('./youtubeService');
               const baseUrl = process.env.BASE_URL || 'http://localhost:7575';
-              console.log(`[RotationService] Triggering post-live metadata sync for ${rotationStream.id}`);
-              // Small delay to allow YouTube to process the "complete" transition
-              setTimeout(async () => {
-                await youtubeService.updatePostLiveMetadata(rotationStream.id, baseUrl);
-              }, 15000);
+
+              const delayDays = rotationStream.post_live_delay_days || 0;
+              const ctrThreshold = rotationStream.post_live_ctr_threshold || 0;
+
+              if (delayDays > 0 || ctrThreshold > 0) {
+                // SCHEDULE FOR LATER
+                console.log(`[RotationService] Scheduling post-live sync for ${rotationStream.id} (Delay: ${delayDays}d, CTR: ${ctrThreshold}%)`);
+                const targetDate = new Date();
+                targetDate.setDate(targetDate.getDate() + delayDays);
+
+                await Rotation.updateStreamPostLiveMetadata(rotationStream.id, {
+                  post_live_sync_status: 'pending',
+                  target_sync_date: targetDate.toISOString()
+                });
+              } else {
+                // INSTANT SYNC (Original Behavior)
+                console.log(`[RotationService] Triggering instant post-live metadata sync for ${rotationStream.id}`);
+                // Small delay to allow YouTube to process the "complete" transition
+                setTimeout(async () => {
+                  try {
+                    await youtubeService.updatePostLiveMetadata(rotationStream.id, baseUrl);
+                    await Rotation.updateStreamPostLiveMetadata(rotationStream.id, {
+                      post_live_sync_status: 'completed'
+                    });
+                  } catch (err) {
+                    console.error('[RotationService] Instant Sync Error:', err);
+                  }
+                }, 15000);
+              }
             }
           }
         } catch (ytError) {

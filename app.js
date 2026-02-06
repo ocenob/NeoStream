@@ -1,5 +1,6 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+const archiver = require('archiver');
 
 const fs = require('fs');
 const dbDir = path.join(__dirname, 'db');
@@ -18,6 +19,7 @@ const express = require('express');
 const engine = require('ejs-mate');
 const os = require('os');
 const multer = require('multer');
+const metadataWorker = require('./services/metadataWorker');
 const csrf = require('csrf');
 const { v4: uuidv4 } = require('uuid');
 const session = require('express-session');
@@ -1149,6 +1151,8 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
       customTags,
       postLiveTitles,
       postLiveThumbnailMode,
+      postLiveDelayDays,
+      postLiveCtrThreshold,
       privacy,
       repeatMode
     } = req.body;
@@ -1184,7 +1188,9 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
         minDailyStreams: parseInt(req.body.minDailyStreams || 5),
         maxDailyStreams: parseInt(req.body.maxDailyStreams || 10),
         postLiveTitles: postLiveTitles || [],
-        postLiveThumbnailMode: postLiveThumbnailMode || 'none'
+        postLiveThumbnailMode: postLiveThumbnailMode || 'none',
+        postLiveDelayDays: parseInt(postLiveDelayDays || 0),
+        postLiveCtrThreshold: parseFloat(postLiveCtrThreshold || 0)
       });
     } else {
       result = await AutoSchedulerService.generateRotations(channelId, userId, {
@@ -1200,7 +1206,9 @@ app.post('/api/channels/:id/generate-smart-rotation', isAuthenticated, async (re
         privacy: privacy || 'unlisted',
         repeatMode: repeatMode || 'daily',
         postLiveTitles: postLiveTitles || [],
-        postLiveThumbnailMode: postLiveThumbnailMode || 'none'
+        postLiveThumbnailMode: postLiveThumbnailMode || 'none',
+        postLiveDelayDays: parseInt(postLiveDelayDays || 0),
+        postLiveCtrThreshold: parseFloat(postLiveCtrThreshold || 0)
       });
     }
 
@@ -2513,6 +2521,146 @@ app.post('/api/videos/:id/rename', isAuthenticated, [
   } catch (error) {
     console.error('Error renaming video:', error);
     res.status(500).json({ error: 'Failed to rename video' });
+  }
+});
+
+// --- Gallery Bulk Actions API ---
+
+app.post('/api/gallery/bulk-delete', isAuthenticated, async (req, res) => {
+  try {
+    const { ids, type } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'No items selected' });
+    }
+
+    let deletedCount = 0;
+    const Model = type === 'image' ? Thumbnail : Video;
+
+    for (const id of ids) {
+      try {
+        const item = await Model.findById(id);
+        if (item && item.user_id === req.session.userId) {
+          // Delete file(s)
+          if (type === 'image') {
+            const filePath = path.join(__dirname, 'public', item.filepath);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            await Thumbnail.delete(id);
+          } else {
+            const videoPath = path.join(__dirname, 'public', item.filepath);
+            if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+            if (item.thumbnail_path && !item.thumbnail_path.includes('default')) {
+              const thumbPath = path.join(__dirname, 'public', item.thumbnail_path);
+              if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath);
+            }
+            await Video.delete(id, req.session.userId);
+          }
+          deletedCount++;
+        }
+      } catch (err) {
+        console.error(`Error deleting item ${id}:`, err);
+      }
+    }
+
+    res.json({ success: true, deleted: deletedCount });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete items' });
+  }
+});
+
+app.post('/api/gallery/bulk-download', isAuthenticated, async (req, res) => {
+  try {
+    const { ids, type } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, error: 'No items selected' });
+    }
+
+    // We generate a temp token and store the request in the session
+    const downloadToken = uuidv4();
+    if (!req.session.pendingDownloads) req.session.pendingDownloads = {};
+    req.session.pendingDownloads[downloadToken] = { ids, type, timestamp: Date.now() };
+
+    res.json({
+      success: true,
+      downloadUrl: `/api/gallery/bulk-download/serve/${downloadToken}`
+    });
+  } catch (error) {
+    console.error('Bulk download init error:', error);
+    res.status(500).json({ success: false, error: 'Failed to prepare download' });
+  }
+});
+
+app.get('/api/gallery/bulk-download/serve/:token', isAuthenticated, async (req, res) => {
+  try {
+    const token = req.params.token;
+    const pending = req.session.pendingDownloads ? req.session.pendingDownloads[token] : null;
+
+    if (!pending) {
+      return res.status(404).send('Download session expired or not found');
+    }
+
+    // Cleanup session to prevent reuse/bloat
+    delete req.session.pendingDownloads[token];
+
+    const { ids, type } = pending;
+    const Model = type === 'image' ? Thumbnail : Video;
+    const items = [];
+
+    for (const id of ids) {
+      const item = await Model.findById(id);
+      if (item && item.user_id === req.session.userId) {
+        items.push(item);
+      }
+    }
+
+    if (items.length === 0) {
+      return res.status(404).send('No valid files found for download');
+    }
+
+    // Setup ZIP streaming
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    const zipName = `neostream_bulk_${type}_${new Date().getTime()}.zip`;
+
+    res.attachment(zipName);
+    archive.pipe(res);
+
+    for (const item of items) {
+      const filePath = path.join(__dirname, 'public', item.filepath);
+      if (fs.existsSync(filePath)) {
+        // Use filename or title for entry name
+        const entryName = (item.title || item.filename) + path.extname(item.filepath);
+        archive.file(filePath, { name: entryName });
+      }
+    }
+
+    archive.finalize();
+
+  } catch (error) {
+    console.error('Bulk download serving error:', error);
+    res.status(500).send('Error generating download');
+  }
+});
+
+app.get('/api/gallery/download/:type/:id', isAuthenticated, async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    const Model = type === 'image' ? Thumbnail : Video;
+    const item = await Model.findById(id);
+
+    if (!item || item.user_id !== req.session.userId) {
+      return res.status(403).send('Not authorized');
+    }
+
+    const filePath = path.join(__dirname, 'public', item.filepath);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).send('File not found');
+    }
+
+    const downloadName = (item.title || item.filename) + path.extname(item.filepath);
+    res.download(filePath, downloadName);
+  } catch (error) {
+    console.error('Single download error:', error);
+    res.status(500).send('Error downloading file');
   }
 });
 app.get('/stream/:videoId', isAuthenticated, async (req, res) => {
@@ -5830,6 +5978,9 @@ app.get('/api/system-stats', isAuthenticated, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch stats' });
   }
 });
+
+// Initialize metadata worker (check every 2 hours)
+metadataWorker.startMetadataWorker(2 * 3600000);
 
 const server = app.listen(port, '0.0.0.0', async () => {
   try {
