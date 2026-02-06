@@ -1,8 +1,14 @@
+require('dotenv').config();
 const { google } = require('googleapis');
-const { db } = require('./db/database');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+const fs = require('fs');
 const { decrypt } = require('./utils/encryption');
-const YoutubeChannel = require('./models/YoutubeChannel');
 const User = require('./models/User');
+
+// Resolve DB Path from .env
+const dbPath = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.join(__dirname, 'db', 'database.db');
+const db = new sqlite3.Database(dbPath);
 
 async function cleanupDuplicates() {
     console.log('[Cleanup] Starting YouTube duplicate broadcast cleanup...');
