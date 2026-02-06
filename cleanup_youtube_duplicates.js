@@ -7,7 +7,7 @@ const { decrypt } = require('./utils/encryption');
 const User = require('./models/User');
 
 // Resolve DB Path from .env
-const dbPath = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.join(__dirname, 'db', 'database.db');
+const dbPath = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.join(__dirname, 'data', 'neostream.db');
 const db = new sqlite3.Database(dbPath);
 
 async function cleanupDuplicates() {
@@ -42,31 +42,37 @@ async function cleanupDuplicates() {
 
             const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-            // List upcoming broadcasts
-            const response = await youtube.liveBroadcasts.list({
-                part: ['snippet', 'status'],
-                broadcastStatus: 'upcoming',
-                maxResults: 50
-            });
+            // Fetch ALL upcoming broadcasts with pagination
+            let allBroadcasts = [];
+            let nextPageToken = null;
 
-            const broadcasts = response.data.items || [];
-            console.log(`[Cleanup] Found ${broadcasts.length} upcoming broadcasts (first page)`);
+            console.log(`[Cleanup] Fetching upcoming broadcasts for ${channel.channel_name}...`);
+            do {
+                const response = await youtube.liveBroadcasts.list({
+                    part: ['snippet', 'status'],
+                    broadcastStatus: 'upcoming',
+                    maxResults: 50,
+                    pageToken: nextPageToken
+                });
+
+                allBroadcasts = allBroadcasts.concat(response.data.items || []);
+                nextPageToken = response.data.nextPageToken;
+            } while (nextPageToken);
+
+            console.log(`[Cleanup] Found total ${allBroadcasts.length} upcoming broadcasts`);
 
             // Group by title to identify duplicates
             const seenTitles = new Map();
             let deletedCount = 0;
 
-            for (const broadcast of broadcasts) {
+            for (const broadcast of allBroadcasts) {
                 const title = broadcast.snippet.title;
                 const id = broadcast.id;
                 const scheduledTime = broadcast.snippet.scheduledStartTime;
 
-                // If it's for Feb 6 or Feb 7 and we've seen this title already for roughly the same time window
-                // Or just delete if we have more than 5 with same title
                 if (!seenTitles.has(title)) {
                     seenTitles.set(title, []);
                 }
-
                 seenTitles.get(title).push({ id, scheduledTime });
             }
 
@@ -83,10 +89,14 @@ async function cleanupDuplicates() {
                             await youtube.liveBroadcasts.delete({ id: item.id });
                             deletedCount++;
                             console.log(`[Cleanup] Deleted duplicate: ${item.id} (${item.scheduledTime})`);
-                            // Wait a bit to avoid hitting rate limit again
-                            await new Promise(r => setTimeout(r, 500));
+                            // Wait to avoid hitting rate limit
+                            await new Promise(r => setTimeout(r, 800));
                         } catch (err) {
                             console.error(`[Cleanup] Failed to delete ${item.id}:`, err.message);
+                            if (err.message.includes('quota') || err.code === 403) {
+                                console.log('[Cleanup] Hit API limit. Skipping further deletions for this channel.');
+                                break;
+                            }
                         }
                     }
                 }
