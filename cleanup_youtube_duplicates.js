@@ -14,15 +14,20 @@ async function cleanupDuplicates() {
     console.log('[Cleanup] Starting YouTube duplicate broadcast cleanup...');
 
     try {
+        const targetChannelName = 'LATIN REMIX';
         const channels = await new Promise((resolve, reject) => {
-            db.all('SELECT * FROM youtube_channels', (err, rows) => {
+            db.all('SELECT * FROM youtube_channels WHERE channel_name LIKE ?', [`%${targetChannelName}%`], (err, rows) => {
                 if (err) reject(err);
                 else resolve(rows);
             });
         });
 
+        if (channels.length === 0) {
+            console.log(`[Cleanup] No channel found matching "${targetChannelName}"`);
+        }
+
         for (const channel of channels) {
-            console.log(`[Cleanup] Processing channel: ${channel.channel_name} (${channel.channel_id})`);
+            console.log(`[Cleanup] Target Channel Found: ${channel.channel_name} (${channel.channel_id})`);
 
             const user = await User.findById(channel.user_id);
             if (!user) {
