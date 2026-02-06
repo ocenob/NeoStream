@@ -32,7 +32,11 @@ class Stream {
       is_youtube_api = false,
       thumbnail_id = null,
       post_live_title = null,
-      post_live_thumbnail_path = null
+      post_live_thumbnail_path = null,
+      post_live_delay_days = 0,
+      post_live_ctr_threshold = 0.0,
+      post_live_sync_status = 'pending',
+      target_sync_date = null
     } = streamData;
     const loop_video_int = loop_video ? 1 : 0;
     const use_advanced_settings_int = use_advanced_settings ? 1 : 0;
