@@ -333,9 +333,9 @@ async function buildFFmpegArgsForPlaylist(stream, playlist) {
       '-map', '1:a:0',
 
       '-c:v', 'copy',
-      '-c:a', 'copy',
+      '-c:a', 'aac',
       '-b:a', '128k',
-      '-ar', '44100', // Note: -ar might be ignored with copy, but safer to keep or remove. Copy ignores filters. Let's keep flags minimal.
+      '-ar', '44100',
       '-ac', '2',
 
       '-f', 'flv',
