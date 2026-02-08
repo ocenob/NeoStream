@@ -316,32 +316,72 @@ async function buildFFmpegArgsForPlaylist(stream, playlist) {
 
   if (!stream.use_advanced_settings) {
     console.log('[StreamingService] --- 🔥 LOG: POWERED BY ANTIGRAVITY CPU FIX (Opsi A) 🔥 ---');
-    console.log('[StreamingService] Playlist with Audio: Low CPU Copy Mode active.');
-    return [
-      '-nostdin',
-      '-loglevel', 'info',
-      '-re',
-      '-fflags', '+genpts+igndts+discardcorrupt',
-      '-avoid_negative_ts', 'make_zero',
-      '-f', 'concat',
-      '-safe', '0',
-      '-i', concatFile,
-      '-f', 'concat',
-      '-safe', '0',
-      '-i', audioConcatFile,
-      '-map', '0:v:0',
-      '-map', '1:a:0',
 
-      '-c:v', 'copy',
-      '-c:a', 'aac',
-      '-b:a', '128k',
-      '-ar', '44100',
-      '-ac', '2',
+    // SMART CHECK: Verify if all audios are AAC/MP3/M4A to allow "copy"
+    let allAudioCompatible = true;
+    for (const ap of audioPaths) {
+      const ext = path.extname(ap).toLowerCase();
+      if (!['.aac', '.m4a', '.mp3', '.mp4'].includes(ext)) {
+        console.log(`[StreamingService] Found incompatible audio: ${path.basename(ap)} (${ext}). Fallback to transcoding.`);
+        allAudioCompatible = false;
+        break;
+      }
+    }
 
-      '-f', 'flv',
-      '-flvflags', 'no_duration_filesize',
-      rtmpUrl
-    ];
+    if (allAudioCompatible) {
+      console.log('[StreamingService] ✅ All audio files are compatible (AAC/MP3/M4A). Using DIRECT COPY for max performance!');
+      return [
+        '-nostdin',
+        '-loglevel', 'info',
+        '-re',
+        '-fflags', '+genpts+igndts+discardcorrupt',
+        '-avoid_negative_ts', 'make_zero',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concatFile,
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', audioConcatFile,
+        '-map', '0:v:0',
+        '-map', '1:a:0',
+
+        '-c:v', 'copy',
+        '-c:a', 'copy', // CHANGED FROM AAC TO COPY
+        // Remove bitrate/ar/ac as they are not needed for copy
+
+        '-f', 'flv',
+        '-flvflags', 'no_duration_filesize',
+        rtmpUrl
+      ];
+    } else {
+      console.log('[StreamingService] ⚠️ Detected uncompressed/incompatible audio (WAV/FLAC). Forcing AAC Transcoding.');
+      // Fallback to AAC Transcoding (Original "Low CPU" logic but with AAC encode)
+      return [
+        '-nostdin',
+        '-loglevel', 'info',
+        '-re',
+        '-fflags', '+genpts+igndts+discardcorrupt',
+        '-avoid_negative_ts', 'make_zero',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concatFile,
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', audioConcatFile,
+        '-map', '0:v:0',
+        '-map', '1:a:0',
+
+        '-c:v', 'copy',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-ar', '44100',
+        '-ac', '2',
+
+        '-f', 'flv',
+        '-flvflags', 'no_duration_filesize',
+        rtmpUrl
+      ];
+    }
   }
 
   // Advanced Mode: Transcoding
